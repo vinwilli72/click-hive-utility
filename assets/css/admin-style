@@ -1,0 +1,268 @@
+/**
+ * Click Hive Utility Plugin Admin Styles
+ * Styles for the plugin's own admin pages
+ */
+
+/* ============================================
+   DASHBOARD LAYOUT
+   ============================================ */
+.chu-admin h1 img {
+    height: 40px;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+.chu-dashboard-container {
+    max-width: 1200px;
+    margin-top: 20px;
+}
+
+.chu-welcome-panel {
+    background: #ffffff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 30px;
+    margin-bottom: 20px;
+}
+
+.chu-welcome-panel h2 {
+    margin-top: 0;
+    color: #231f20;
+    font-size: 24px;
+}
+
+.chu-welcome-panel > p {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+/* ============================================
+   FEATURE GRID
+   ============================================ */
+.chu-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.chu-feature-box {
+    background: rgb(245, 245, 245);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.chu-feature-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #f07021;
+}
+
+.chu-feature-box .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #f07021;
+    margin-bottom: 15px;
+}
+
+.chu-feature-box h3 {
+    margin: 10px 0;
+    color: #231f20;
+    font-size: 18px;
+}
+
+.chu-feature-box p {
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.chu-feature-box .button {
+    margin-top: 10px;
+}
+
+/* ============================================
+   INFO BOXES
+   ============================================ */
+.chu-info-boxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.chu-info-box {
+    background: #ffffff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.chu-info-box h3 {
+    margin-top: 0;
+    color: #231f20;
+    font-size: 16px;
+    border-bottom: 2px solid #f07021;
+    padding-bottom: 10px;
+}
+
+.chu-info-box p {
+    margin: 15px 0 0 0;
+    font-size: 14px;
+}
+
+.chu-info-box strong {
+    color: #f07021;
+    font-size: 18px;
+}
+
+/* ============================================
+   PREVIEW BOX
+   ============================================ */
+.chu-preview-box {
+    background: #ffffff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 25px;
+    margin-top: 30px;
+}
+
+.chu-preview-box h2 {
+    margin-top: 0;
+    color: #231f20;
+    font-size: 18px;
+}
+
+/* ============================================
+   FORM STYLES
+   ============================================ */
+.chu-admin .form-table th {
+    padding: 20px 10px 20px 0;
+    font-weight: 500;
+    color: #231f20;
+}
+
+.chu-admin .form-table td {
+    padding: 20px 10px;
+}
+
+.chu-admin .form-table input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.chu-admin .form-table label {
+    font-weight: 500;
+    color: #231f20;
+}
+
+.chu-admin .description {
+    margin-top: 10px;
+    line-height: 1.8;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.chu-admin .button-primary {
+    background: #f07021;
+    border-color: #f07021;
+    color: #ffffff;
+    text-shadow: none;
+    box-shadow: none;
+    padding: 0 20px;
+    height: 36px;
+    line-height: 34px;
+}
+
+.chu-admin .button-primary:hover,
+.chu-admin .button-primary:focus {
+    background: #d96320;
+    border-color: #d96320;
+    color: #ffffff;
+}
+
+.chu-admin .button {
+    height: 36px;
+    line-height: 34px;
+    padding: 0 20px;
+}
+
+/* ============================================
+   CONTAINER
+   ============================================ */
+.chu-container {
+    background: #ffffff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 25px;
+    margin-top: 20px;
+}
+
+.chu-container h2 {
+    margin-top: 0;
+    color: #231f20;
+}
+
+.chu-container p {
+    line-height: 1.8;
+    color: #666;
+}
+
+/* ============================================
+   NOTICES
+   ============================================ */
+.chu-admin .notice {
+    margin: 20px 0;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media screen and (max-width: 782px) {
+    .chu-feature-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chu-info-boxes {
+        grid-template-columns: 1fr;
+    }
+    
+    .chu-welcome-panel {
+        padding: 20px;
+    }
+    
+    .chu-preview-box > div {
+        flex-direction: column !important;
+    }
+    
+    .chu-preview-box > div > div {
+        margin-bottom: 20px;
+    }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.chu-text-center {
+    text-align: center;
+}
+
+.chu-mt-20 {
+    margin-top: 20px;
+}
+
+.chu-mb-20 {
+    margin-bottom: 20px;
+}
+
+.chu-color-orange {
+    color: #f07021;
+}
+
+.chu-color-dark {
+    color: #231f20;
+}

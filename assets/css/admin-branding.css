@@ -1,0 +1,317 @@
+/**
+ * Click Hive Admin Branding Styles
+ * Customizes WordPress admin area to match Click Hive branding
+ */
+
+/* ============================================
+   FONTS
+   ============================================ */
+body,
+#wpadminbar *,
+.wp-core-ui,
+.wp-admin {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* ============================================
+   ADMIN BAR (Top Bar)
+   ============================================ */
+#wpadminbar {
+    background: #231f20 !important;
+}
+
+#wpadminbar .ab-item,
+#wpadminbar a.ab-item,
+#wpadminbar > #wp-toolbar span.ab-label,
+#wpadminbar > #wp-toolbar span.noticon {
+    color: #ffffff !important;
+}
+
+#wpadminbar .ab-top-menu > li:hover > .ab-item,
+#wpadminbar .ab-top-menu > li.hover > .ab-item,
+#wpadminbar .ab-top-menu > li > .ab-item:focus,
+#wpadminbar.nojq .quicklinks .ab-top-menu > li > .ab-item:focus {
+    background: #f07021 !important;
+    color: #ffffff !important;
+}
+
+#wpadminbar .ab-submenu {
+    background: #231f20 !important;
+}
+
+#wpadminbar .ab-submenu .ab-item {
+    color: #ffffff !important;
+}
+
+#wpadminbar .ab-submenu .ab-item:hover,
+#wpadminbar .ab-submenu .ab-item:focus {
+    background: #f07021 !important;
+    color: #ffffff !important;
+}
+
+/* ============================================
+   LEFT SIDEBAR MENU
+   ============================================ */
+#adminmenu,
+#adminmenu .wp-submenu,
+#adminmenuback,
+#adminmenuwrap {
+    background: #231f20 !important;
+}
+
+#adminmenu a,
+#adminmenu div.wp-menu-name {
+    color: #ffffff !important;
+}
+
+#adminmenu .wp-submenu a {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Menu item hover */
+#adminmenu li.menu-top:hover,
+#adminmenu li.opensub > a.menu-top,
+#adminmenu li > a.menu-top:focus {
+    background: #f07021 !important;
+    color: #ffffff !important;
+}
+
+#adminmenu li.menu-top:hover .wp-menu-name,
+#adminmenu li.opensub > a.menu-top .wp-menu-name,
+#adminmenu li > a.menu-top:focus .wp-menu-name {
+    color: #ffffff !important;
+}
+
+/* Current/Active menu item */
+#adminmenu .wp-has-current-submenu .wp-submenu,
+#adminmenu .wp-has-current-submenu .wp-submenu.wp-submenu-wrap,
+#adminmenu .wp-has-current-submenu.opensub .wp-submenu,
+#adminmenu a.wp-has-current-submenu:focus + .wp-submenu {
+    background: #231f20 !important;
+}
+
+#adminmenu li.current a.menu-top,
+#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,
+.folded #adminmenu li.current.menu-top,
+#adminmenu .wp-has-current-submenu .wp-submenu .wp-submenu-head,
+#adminmenu .wp-menu-arrow,
+#adminmenu .wp-menu-arrow div {
+    background: #f07021 !important;
+    color: #ffffff !important;
+}
+
+/* Submenu hover */
+#adminmenu .wp-submenu a:hover,
+#adminmenu .wp-submenu a:focus {
+    background: rgba(240, 112, 33, 0.3) !important;
+    color: #ffffff !important;
+}
+
+/* Active submenu item */
+#adminmenu .wp-submenu li.current a,
+#adminmenu .wp-submenu li.current a:hover,
+#adminmenu .wp-submenu li.current a:focus {
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+/* Menu icons */
+#adminmenu div.wp-menu-image:before,
+#adminmenu a.menu-top:hover div.wp-menu-image:before {
+    color: #ffffff !important;
+}
+
+/* Collapse menu button */
+#collapse-button,
+#collapse-button:hover {
+    color: #ffffff !important;
+}
+
+/* ============================================
+   MAIN CONTENT AREA
+   ============================================ */
+#wpcontent,
+#wpbody-content {
+    background: rgb(245, 245, 245) !important;
+}
+
+.wrap {
+    background: rgb(245, 245, 245);
+}
+
+/* ============================================
+   LINKS & BUTTONS
+   ============================================ */
+a {
+    color: #231f20;
+}
+
+a:hover,
+a:active,
+a:focus {
+    color: #f07021;
+}
+
+/* Primary buttons */
+.wp-core-ui .button-primary {
+    background: #f07021 !important;
+    border-color: #f07021 !important;
+    color: #ffffff !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+.wp-core-ui .button-primary:hover,
+.wp-core-ui .button-primary:focus {
+    background: #d96320 !important;
+    border-color: #d96320 !important;
+}
+
+/* ============================================
+   NOTICES & ALERTS
+   ============================================ */
+.notice,
+.update-nag {
+    border-left-color: #f07021 !important;
+}
+
+.notice-success,
+.updated {
+    border-left-color: #46b450 !important;
+}
+
+.notice-error,
+.error {
+    border-left-color: #dc3232 !important;
+}
+
+/* ============================================
+   TABLES & LIST VIEWS
+   ============================================ */
+.widefat thead tr,
+.widefat tfoot tr {
+    background: #231f20 !important;
+    color: #ffffff !important;
+}
+
+.widefat thead tr th,
+.widefat tfoot tr th {
+    color: #ffffff !important;
+}
+
+.striped > tbody > :nth-child(odd),
+ul.striped > :nth-child(odd) {
+    background-color: rgba(35, 31, 32, 0.05);
+}
+
+/* ============================================
+   WIDGETS & META BOXES
+   ============================================ */
+.postbox,
+.stuffbox {
+    background: #ffffff;
+    border: 1px solid rgba(35, 31, 32, 0.2);
+}
+
+.postbox .postbox-header,
+.postbox .hndle {
+    background: #ffffff;
+    border-bottom: 1px solid rgba(35, 31, 32, 0.2);
+}
+
+/* ============================================
+   MOBILE RESPONSIVE
+   ============================================ */
+@media screen and (max-width: 782px) {
+    #wpadminbar {
+        background: #231f20 !important;
+    }
+    
+    #adminmenu,
+    #adminmenuback,
+    #adminmenuwrap {
+        background: #231f20 !important;
+    }
+}
+
+/* ============================================
+   FOLDED MENU
+   ============================================ */
+.folded #adminmenu li.menu-top:hover {
+    background: #f07021 !important;
+}
+
+.folded #adminmenu .wp-submenu {
+    background: #231f20 !important;
+    border-color: #f07021 !important;
+}
+
+/* ============================================
+   SCREEN OPTIONS & HELP
+   ============================================ */
+#screen-meta {
+    background: #ffffff;
+    border-color: rgba(35, 31, 32, 0.2);
+}
+
+#screen-meta-links .show-settings {
+    border-color: rgba(35, 31, 32, 0.2);
+    background: #ffffff;
+}
+
+#screen-meta-links .show-settings:hover {
+    background: rgb(245, 245, 245);
+}
+
+/* ============================================
+   DASHBOARD WIDGETS
+   ============================================ */
+#dashboard-widgets .postbox .inside {
+    margin: 0;
+    padding: 12px;
+}
+
+.activity-block {
+    border-bottom: 1px solid rgba(35, 31, 32, 0.1);
+    padding: 12px;
+}
+
+/* ============================================
+   FORMS & INPUTS
+   ============================================ */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="color"]:focus,
+input[type="date"]:focus,
+input[type="datetime"]:focus,
+input[type="datetime-local"]:focus,
+input[type="email"]:focus,
+input[type="month"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="text"]:focus,
+input[type="time"]:focus,
+input[type="url"]:focus,
+input[type="week"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #f07021 !important;
+    box-shadow: 0 0 0 1px #f07021 !important;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+#wpfooter {
+    color: #666;
+}
+
+#wpfooter a {
+    color: #f07021;
+    text-decoration: none;
+}
+
+#wpfooter a:hover {
+    color: #d96320;
+}
