@@ -2,7 +2,7 @@
 class CHU_Updater {
     
     private $plugin_file;
-    private $github_username = 'your-username';
+    private $github_username = 'vinwilli72';
     private $github_repo = 'click-hive-utility';
     private $github_token = ''; // Optional: for private repos
     
