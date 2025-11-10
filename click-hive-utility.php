@@ -3,8 +3,8 @@
  * Plugin Name: Click Hive Utility
  * Plugin URI: https://clickhivemarketing.com/click-hive-utility
  * Description: Enhances WordPress admin dashboard with utility improvements
- * Version: 1.0.0
- * Author: Your Name
+ * Version: 1.0.1
+ * Author: Click Hive Marketing
  * Author URI: https://clickhivemarketing.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CHU_VERSION', '1.0.0');
+define('CHU_VERSION', '1.0.1');
 define('CHU_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CHU_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CHU_PLUGIN_FILE', __FILE__);
