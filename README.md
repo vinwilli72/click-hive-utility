@@ -16,7 +16,8 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
-
+### 1.0.6
+- Fixed Admin Dashboard Toggle challenge
 ### 1.0.3 
 - Basic Admin Dashboard Changes
 - Bug Fixes
