@@ -154,7 +154,7 @@ class CHU_Updater {
         $body = json_decode(wp_remote_retrieve_body($response));
         
         if (!empty($body->tag_name)) {
-            $version = ltrim($body->tag_name, 'v');
+            $version = ltrim($body->tag_name, 'v.');
             // Cache for 6 hours
             set_transient($transient_key, $version, 6 * HOUR_IN_SECONDS);
             return $version;
