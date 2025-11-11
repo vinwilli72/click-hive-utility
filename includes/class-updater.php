@@ -24,7 +24,7 @@ class CHU_Updater {
     
     /**
      * Fix the folder name after download
-     * GitHub adds the repo name with version number, we need just the plugin slug
+     * GitHub names folders as "repo-name-version" but WordPress needs "repo-name"
      */
     public function fix_source_folder($source, $remote_source, $upgrader, $hook_extra = null) {
         global $wp_filesystem;
@@ -38,34 +38,37 @@ class CHU_Updater {
             return $source;
         }
         
-        // Get the correct plugin folder name (without version)
+        // Get the correct plugin folder name (should be: click-hive-utility)
         $plugin_slug = dirname(plugin_basename($this->plugin_file));
         
-        // Get current folder name
-        $source = rtrim($source, '/');
-        $source_basename = basename($source);
+        // Clean up source path
+        $source = rtrim($source, '/\\');
+        $source_name = basename($source);
         
         // If already correct, return it
-        if ($source_basename === $plugin_slug) {
+        if ($source_name === $plugin_slug) {
             return trailingslashit($source);
         }
         
-        // Build the correct path
+        // Build correct destination path
         $new_source = dirname($source) . '/' . $plugin_slug;
         
-        // If the target already exists, remove it first
+        // If destination exists, delete it first
         if ($wp_filesystem->exists($new_source)) {
-            $wp_filesystem->delete($new_source, true);
+            $wp_filesystem->delete($new_source, true, 'd');
         }
         
-        // Rename/move the folder
-        if ($wp_filesystem->move($source, $new_source, true)) {
+        // Move/rename the folder
+        $moved = $wp_filesystem->move($source, $new_source, true);
+        
+        if ($moved) {
             return trailingslashit($new_source);
         }
         
-        // Log error but don't fail the update
-        error_log('CHU Updater: Failed to rename ' . $source . ' to ' . $new_source);
+        // Log error for debugging
+        error_log('CHU Updater Error: Could not rename ' . $source . ' to ' . $new_source);
         
+        // Return original source to avoid breaking update
         return trailingslashit($source);
     }
     
@@ -96,9 +99,7 @@ class CHU_Updater {
             $obj->new_version = $remote_version;
             $obj->url = "https://github.com/{$this->github_username}/{$this->github_repo}";
             $obj->package = $this->get_download_url($remote_version);
-            $obj->icons = array(
-                'default' => CHU_PLUGIN_URL . 'assets/images/click-hive-logo.png'
-            );
+            $obj->icons = array();
             $obj->banners = array();
             $obj->banners_rtl = array();
             $obj->tested = get_bloginfo('version');
@@ -114,9 +115,6 @@ class CHU_Updater {
             $obj->new_version = $remote_version ? $remote_version : CHU_VERSION;
             $obj->url = "https://github.com/{$this->github_username}/{$this->github_repo}";
             $obj->package = '';
-            $obj->icons = array(
-                'default' => CHU_PLUGIN_URL . 'assets/images/click-hive-logo.png'
-            );
             
             $transient->no_update[$plugin_slug] = $obj;
         }
