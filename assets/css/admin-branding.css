@@ -27,11 +27,22 @@ body,
     color: #ffffff !important;
 }
 
+/* Fix for ab-icon elements */
+#wpadminbar .ab-icon:before,
+#wpadminbar .ab-item:before {
+    color: #ffffff !important;
+}
+
 #wpadminbar .ab-top-menu > li:hover > .ab-item,
 #wpadminbar .ab-top-menu > li.hover > .ab-item,
 #wpadminbar .ab-top-menu > li > .ab-item:focus,
 #wpadminbar.nojq .quicklinks .ab-top-menu > li > .ab-item:focus {
     background: #f07021 !important;
+    color: #ffffff !important;
+}
+
+#wpadminbar .ab-top-menu > li:hover > .ab-item .ab-icon:before,
+#wpadminbar .ab-top-menu > li.hover > .ab-item .ab-icon:before {
     color: #ffffff !important;
 }
 

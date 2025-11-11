@@ -13,6 +13,36 @@ class CHU_Admin {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
+        add_action('admin_init', array($this, 'handle_settings_save'));
+    }
+    
+    /**
+     * Handle settings save
+     */
+    public function handle_settings_save() {
+        // Check if our form was submitted
+        if (!isset($_POST['chu_save_settings'])) {
+            return;
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'chu_admin_settings')) {
+            return;
+        }
+        
+        // Build options
+        $options = array();
+        $options['enable_admin_styling'] = isset($_POST['chu_settings']['enable_admin_styling']) ? '1' : '0';
+        
+        // Save
+        update_option('chu_settings', $options);
+        
+        // Redirect
+        wp_redirect(add_query_arg(array(
+            'page' => 'chu-admin-dashboard',
+            'settings-updated' => 'true'
+        ), admin_url('admin.php')));
+        exit;
     }
     
     /**
@@ -129,6 +159,15 @@ class CHU_Admin {
                 </div>
             </div>
         </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('form').on('submit', function() {
+                var isChecked = $('input[name="chu_settings[enable_admin_styling]"]').is(':checked');
+                console.log('Form submitting. Checkbox is: ' + (isChecked ? 'CHECKED' : 'UNCHECKED'));
+            });
+        });
+        </script>
         <?php
     }
     
@@ -136,22 +175,19 @@ class CHU_Admin {
      * Render admin settings page
      */
     public function render_admin_settings_page() {
-        // Save settings if form submitted
-        if (isset($_POST['chu_save_settings']) && check_admin_referer('chu_admin_settings')) {
-            $options = array();
-            $options['enable_admin_styling'] = isset($_POST['chu_settings']['enable_admin_styling']) ? '1' : '0';
-            update_option('chu_settings', $options);
-            
+        // Show success message if redirected after save
+        if (isset($_GET['settings-updated']) && $_GET['settings-updated'] === 'true') {
             echo '<div class="notice notice-success is-dismissible"><p>Settings saved successfully!</p></div>';
         }
         
+        // Get CURRENT settings from database
         $settings = get_option('chu_settings', array());
         $styling_enabled = isset($settings['enable_admin_styling']) && $settings['enable_admin_styling'] === '1';
         ?>
         <div class="wrap chu-admin">
             <h1>Admin Dashboard Settings</h1>
             
-            <form method="post" action="">
+            <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=chu-admin-dashboard')); ?>">
                 <?php wp_nonce_field('chu_admin_settings'); ?>
                 
                 <table class="form-table" role="presentation">
@@ -189,7 +225,7 @@ class CHU_Admin {
                 
                 <p class="submit">
                     <input type="submit" 
-                           name="chu_save_settings" 
+                           name="chu_save_settings"
                            class="button button-primary" 
                            value="Save Settings">
                 </p>

@@ -29,6 +29,9 @@ class CHU_Admin_Styling {
         // Remove WordPress logo from admin bar
         add_action('admin_bar_menu', array($this, 'remove_wp_logo'), 999);
         
+        // Remove clutter from admin bar
+        add_action('admin_bar_menu', array($this, 'remove_admin_bar_items'), 999);
+        
         // Move PRO menu to Settings
         add_action('admin_menu', array($this, 'reorganize_menus'), 999);
         
@@ -49,6 +52,21 @@ class CHU_Admin_Styling {
      */
     public function remove_wp_logo($wp_admin_bar) {
         $wp_admin_bar->remove_node('wp-logo');
+    }
+    
+    /**
+     * Remove clutter from admin bar
+     */
+    public function remove_admin_bar_items($wp_admin_bar) {
+        // Remove Comments
+        $wp_admin_bar->remove_node('comments');
+        
+        // Remove New Content (+ menu)
+        $wp_admin_bar->remove_node('new-content');
+        
+        // Optional: Remove other items (uncomment to enable)
+        // $wp_admin_bar->remove_node('updates');  // Updates indicator
+        // $wp_admin_bar->remove_node('search');   // Search box
     }
     
     /**
