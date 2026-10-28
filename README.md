@@ -7,6 +7,7 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 - Custom admin utility area
 - Dashboard customizations
 - Improved admin interface
+- Client Access: a Client role with an allowlisted admin sidebar and login redirect to the dashboard
 
 ## Installation
 
@@ -15,6 +16,11 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 3. Activate the plugin through the 'Plugins' menu in WordPress
 
 ## Changelog
+
+### 1.0.9
+- Added Client Access (Click Hive > Client Access): Client role, sidebar allowlist, extra capabilities, login redirect to the dashboard, and a debug view (`?chcm_debug=1`)
+- Fixed admin styling save overwriting other plugin settings
+- Removed duplicate settings save handler and leftover debug script
 
 ### 1.0.6
 - Fixed Admin Dashboard Toggle challenge

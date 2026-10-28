@@ -14,41 +14,6 @@ class CHU_Settings {
     
     public function __construct() {
         add_action('admin_init', array($this, 'register_settings'));
-        add_action('admin_init', array($this, 'handle_settings_save'));
-    }
-    
-    /**
-     * Handle manual settings save
-     */
-    public function handle_settings_save() {
-        // Check if form was submitted
-        if (!isset($_POST['chu_save_settings'])) {
-            return;
-        }
-        
-        // Only run on our settings page
-        if (!isset($_POST['_wp_http_referer']) || strpos($_POST['_wp_http_referer'], 'chu-admin-dashboard') === false) {
-            return;
-        }
-        
-        // Verify nonce
-        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'chu_admin_settings')) {
-            wp_die('Security check failed');
-        }
-        
-        // Build options array
-        $options = array();
-        $options['enable_admin_styling'] = isset($_POST['chu_settings']['enable_admin_styling']) ? '1' : '0';
-        
-        // Save to database
-        update_option($this->option_name, $options);
-        
-        // Redirect with success message
-        wp_redirect(add_query_arg(array(
-            'page' => 'chu-admin-dashboard',
-            'settings-updated' => 'true'
-        ), admin_url('admin.php')));
-        exit;
     }
     
     /**
@@ -117,7 +82,8 @@ class CHU_Settings {
      * Sanitize settings
      */
     public function sanitize_settings($input) {
-        $sanitized = array();
+        // Keep any other keys so future settings in this option survive a save
+        $sanitized = is_array($input) ? $input : array();
         
         // Sanitize checkbox
         if (isset($input['enable_admin_styling'])) {
