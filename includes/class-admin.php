@@ -30,8 +30,11 @@ class CHU_Admin {
             return;
         }
         
-        // Build options
-        $options = array();
+        // Merge into existing options so other settings aren't wiped
+        $options = get_option('chu_settings', array());
+        if (!is_array($options)) {
+            $options = array();
+        }
         $options['enable_admin_styling'] = isset($_POST['chu_settings']['enable_admin_styling']) ? '1' : '0';
         
         // Save
@@ -138,6 +141,13 @@ class CHU_Admin {
                         </div>
                         
                         <div class="chu-feature-box">
+                            <span class="dashicons dashicons-groups"></span>
+                            <h3>Client Access</h3>
+                            <p>Give clients a Client role with a trimmed sidebar showing only what they manage.</p>
+                            <a href="<?php echo admin_url('admin.php?page=chu-client-access'); ?>" class="button">Configure</a>
+                        </div>
+                        
+                        <div class="chu-feature-box">
                             <span class="dashicons dashicons-editor-code"></span>
                             <h3>Shortcodes</h3>
                             <p>Access reusable shortcodes for consistent functionality across sites.</p>
@@ -160,14 +170,6 @@ class CHU_Admin {
             </div>
         </div>
         
-        <script>
-        jQuery(document).ready(function($) {
-            $('form').on('submit', function() {
-                var isChecked = $('input[name="chu_settings[enable_admin_styling]"]').is(':checked');
-                console.log('Form submitting. Checkbox is: ' + (isChecked ? 'CHECKED' : 'UNCHECKED'));
-            });
-        });
-        </script>
         <?php
     }
     

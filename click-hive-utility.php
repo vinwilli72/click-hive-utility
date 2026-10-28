@@ -3,7 +3,7 @@
  * Plugin Name: Click Hive Utility
  * Plugin URI: https://github.com/vinwilli72/click-hive-utility
  * Description: Enhances WordPress admin dashboard with Click Hive branding and utility improvements
- * Version: 1.0.8
+ * Version: 1.0.9
  * Author: Click Hive Marketing
  * Author URI: https://clickhivemarketing.com
  * License: GPL v2 or later
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CHU_VERSION', '1.0.8');
+define('CHU_VERSION', '1.0.9');
 define('CHU_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CHU_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CHU_PLUGIN_FILE', __FILE__);
@@ -28,12 +28,14 @@ require_once CHU_PLUGIN_DIR . 'includes/class-admin.php';
 require_once CHU_PLUGIN_DIR . 'includes/class-admin-styling.php';
 require_once CHU_PLUGIN_DIR . 'includes/class-updater.php';
 require_once CHU_PLUGIN_DIR . 'includes/class-settings.php';
+require_once CHU_PLUGIN_DIR . 'includes/class-client-menu.php';
 
 // Initialize the plugin features
 function chu_init() {
     $admin = new CHU_Admin();
     $settings = new CHU_Settings();
     $admin_styling = new CHU_Admin_Styling();
+    $client_menu = new CHU_Client_Menu();
     
     // Initialize updater
     $updater = new CHU_Updater(CHU_PLUGIN_FILE);
@@ -58,4 +60,3 @@ function chu_deactivate() {
     flush_rewrite_rules();
 }
 
-// version 8 test
