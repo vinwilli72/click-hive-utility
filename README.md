@@ -17,6 +17,9 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
+### 1.0.10
+- Fixed links in dark table header and footer rows rendering black (invisible); they now show white and turn orange on hover
+
 ### 1.0.9
 - Added Client Access (Click Hive > Client Access): Client role, sidebar allowlist, extra capabilities, login redirect to the dashboard, and a debug view (`?chcm_debug=1`)
 - Fixed admin styling save overwriting other plugin settings
