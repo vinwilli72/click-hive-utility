@@ -17,6 +17,13 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
+### 1.1.0
+- Client Access now uses a checklist of every admin page, including subpages. Check a top-level item for the whole section, or check individual subpages (for example Tickets > Attendees and Orders) to give Clients only those
+- Unchecked pages are blocked for Clients even by direct link; Clients are sent to the Dashboard or their first allowed page
+- Checked pages that require a capability the Client role lacks (such as manage_options) open by granting that capability on that page only
+- Warning on the settings page when manage_options is in Extra capabilities, since it makes Clients bypass all limits
+- Sites upgrading from 1.0.x keep their old list until Client Access is saved again
+
 ### 1.0.10
 - Fixed links in dark table header and footer rows rendering black (invisible); they now show white and turn orange on hover
 
