@@ -210,6 +210,25 @@ a:focus {
     color: #ffffff !important;
 }
 
+/* Links inside dark header/footer rows (sortable column titles, etc.) */
+.widefat thead tr th a,
+.widefat thead tr td a,
+.widefat tfoot tr th a,
+.widefat tfoot tr td a,
+.widefat thead tr th .sorting-indicator::before,
+.widefat tfoot tr th .sorting-indicator::before {
+    color: #ffffff !important;
+}
+
+.widefat thead tr th a:hover,
+.widefat thead tr th a:focus,
+.widefat tfoot tr th a:hover,
+.widefat tfoot tr th a:focus,
+.widefat thead tr th a:hover .sorting-indicator::before,
+.widefat tfoot tr th a:hover .sorting-indicator::before {
+    color: #f07021 !important;
+}
+
 .striped > tbody > :nth-child(odd),
 ul.striped > :nth-child(odd) {
     background-color: rgba(35, 31, 32, 0.05);
