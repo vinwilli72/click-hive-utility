@@ -148,6 +148,13 @@ class CHU_Admin {
                         </div>
                         
                         <div class="chu-feature-box">
+                            <span class="dashicons dashicons-dashboard"></span>
+                            <h3>Client Dashboard</h3>
+                            <p>Quick links, tutorials, training videos and Click Hive support on the client's dashboard.</p>
+                            <a href="<?php echo admin_url('admin.php?page=chu-client-dashboard'); ?>" class="button">Configure</a>
+                        </div>
+                        
+                        <div class="chu-feature-box">
                             <span class="dashicons dashicons-editor-code"></span>
                             <h3>Shortcodes</h3>
                             <p>Access reusable shortcodes for consistent functionality across sites.</p>
