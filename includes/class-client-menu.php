@@ -23,6 +23,7 @@ class CHU_Client_Menu {
     const OPT_ALLOWED      = 'ch_client_menu_allowed';   // 1.0.x text list, read only to migrate old sites
     const OPT_ITEMS        = 'chu_client_access_items';  // 1.1.0+ checklist
     const OPT_CAPS         = 'ch_client_menu_caps';
+    const OPT_DEBUG        = 'chu_client_access_debug';
     const OPT_ROLE_VERSION = 'ch_cm_role_version';
     const ROLE_VERSION     = '1.1';
     const ROLE             = 'client';
@@ -32,6 +33,7 @@ class CHU_Client_Menu {
     private $always_open = array('profile.php');
 
     private $debug          = array();
+    private $debug_shown    = false;
     private $in_menu_build  = false;
     private $request_caps   = null;
     private $items          = null;
@@ -46,6 +48,8 @@ class CHU_Client_Menu {
             return;
         }
 
+        $this->repair_debug_url();
+
         add_action('init', array($this, 'maybe_build_role'));
         add_action('add_option_' . self::OPT_CAPS, array($this, 'build_role'));
         add_action('update_option_' . self::OPT_CAPS, array($this, 'build_role'));
@@ -54,7 +58,8 @@ class CHU_Client_Menu {
         add_filter('user_has_cap', array($this, 'grant_caps'), 10, 4);
         add_action('admin_menu', array($this, 'start_menu_build'), PHP_INT_MIN);
         add_action('admin_menu', array($this, 'filter_menu'), PHP_INT_MAX);
-        add_action('admin_notices', array($this, 'render_debug'));
+        add_action('admin_notices', array($this, 'render_debug'), 1);
+        add_action('admin_footer', array($this, 'render_debug_fallback'));
 
         add_filter('login_redirect', array($this, 'login_redirect'), 9999, 3);
         add_filter('woocommerce_login_redirect', array($this, 'woocommerce_login_redirect'), 9999, 2);
@@ -489,6 +494,9 @@ class CHU_Client_Menu {
         if (!$target) {
             wp_die(esc_html__('You do not have access to this page.'), 403);
         }
+        if ($this->is_debugging()) {
+            $target = add_query_arg('chcm_blocked', rawurlencode($this->request_label()), $target);
+        }
         wp_safe_redirect($target);
         exit;
     }
@@ -500,11 +508,47 @@ class CHU_Client_Menu {
     }
 
     /* ---------------------------------------------------------------
-     * Debug view: add ?chcm_debug=1 to any admin URL while logged in as a Client
+     * Debug panel: turned on from Click Hive > Client Access, shown to Clients on every admin page.
+     * Adding chcm_debug=1 to the URL still works, even when appended with a second "?".
      * ------------------------------------------------------------- */
 
     private function is_debugging() {
-        return isset($_GET['chcm_debug']) && $this->is_client();
+        if (!$this->is_client()) {
+            return false;
+        }
+        if ('1' === get_option(self::OPT_DEBUG, '0') || isset($_GET['chcm_debug'])) {
+            return true;
+        }
+        $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+        return false !== strpos($uri, 'chcm_debug');
+    }
+
+    /**
+     * "admin.php?page=x?chcm_debug=1" (a second "?") makes WordPress look for a page named "x?chcm_debug=1".
+     * Split it back out before WordPress reads the page name.
+     */
+    private function repair_debug_url() {
+        if (!isset($_GET['page']) || !is_string($_GET['page']) || false === strpos($_GET['page'], '?chcm_debug')) {
+            return;
+        }
+        $parts             = explode('?', $_GET['page'], 2);
+        $_GET['page']      = $parts[0];
+        $_REQUEST['page']  = $parts[0];
+        $_GET['chcm_debug'] = '1';
+    }
+
+    /**
+     * The current admin page as a readable path, for telling the Client where they were blocked.
+     */
+    private function request_label() {
+        global $pagenow;
+        $args = array();
+        foreach (array('page', 'post_type', 'taxonomy') as $key) {
+            if (isset($_GET[$key]) && is_string($_GET[$key])) {
+                $args[$key] = sanitize_text_field(wp_unslash($_GET[$key]));
+            }
+        }
+        return $args ? $pagenow . '?' . http_build_query($args) : (string) $pagenow;
     }
 
     private function snapshot() {
@@ -567,14 +611,20 @@ class CHU_Client_Menu {
     }
 
     public function render_debug() {
-        if (!$this->is_debugging()) {
+        if ($this->debug_shown || !$this->is_debugging()) {
             return;
         }
+        $this->debug_shown = true;
         $d    = $this->debug;
         $none = array('(filter did not run)');
         $req  = $this->current_request_caps();
 
+        $blocked = isset($_GET['chcm_blocked']) && is_string($_GET['chcm_blocked'])
+            ? sanitize_text_field(wp_unslash($_GET['chcm_blocked'])) : '';
+
         $sections = array(
+            'This page'                                  => array($this->request_label()),
+            'Blocked and sent here from'                 => array('' !== $blocked ? $blocked . '  (not checked on Client Access)' : '(nothing)'),
             'User roles'                                 => (array) wp_get_current_user()->roles,
             'Checked pages (parent > page | capability)' => isset($d['allowed']) ? ($d['allowed'] ? $d['allowed'] : array('(none, menu not limited)')) : $none,
             'Temporary access on this page'              => $req ? $req : array('(none)'),
@@ -584,11 +634,24 @@ class CHU_Client_Menu {
             'Other code that adds menus after this plugin (callback | file:line)' => $this->late_callbacks(),
         );
 
-        echo '<div class="notice notice-info"><p><strong>Client Access debug</strong></p>';
+        echo '<div class="notice notice-info chu-client-debug"><p><strong>Client Access debug</strong> (turn off on Click Hive &gt; Client Access when finished)</p>';
         foreach ($sections as $label => $lines) {
             echo '<p><strong>' . esc_html($label) . '</strong></p><pre style="white-space:pre-wrap">' . esc_html(implode("\n", $lines)) . '</pre>';
         }
         echo '</div>';
+    }
+
+    /**
+     * Some plugin screens remove admin notices. Print the panel in the footer and move it to the top.
+     */
+    public function render_debug_fallback() {
+        if ($this->debug_shown || !$this->is_debugging()) {
+            return;
+        }
+        echo '<div id="chu-client-debug-fallback">';
+        $this->render_debug();
+        echo '</div>';
+        echo '<script>(function(){var p=document.getElementById("chu-client-debug-fallback"),t=document.getElementById("wpbody-content");if(p&&t){t.insertBefore(p,t.firstChild);}})();</script>';
     }
 
     /* ---------------------------------------------------------------
@@ -618,6 +681,13 @@ class CHU_Client_Menu {
             'type'              => 'array',
             'sanitize_callback' => array($this, 'sanitize_items'),
             'default'           => array('v' => 2, 'items' => array()),
+        ));
+        register_setting('chu_client_menu', self::OPT_DEBUG, array(
+            'type'              => 'string',
+            'sanitize_callback' => function ($value) {
+                return '1' === $value ? '1' : '0';
+            },
+            'default'           => '0',
         ));
         register_setting('chu_client_menu', self::OPT_CAPS, array(
             'type'              => 'string',
@@ -698,6 +768,20 @@ class CHU_Client_Menu {
                             </td>
                         </tr>
                         <tr>
+                            <th scope="row">Debug panel</th>
+                            <td>
+                                <input type="hidden" name="<?php echo esc_attr(self::OPT_DEBUG); ?>" value="0">
+                                <label>
+                                    <input type="checkbox" name="<?php echo esc_attr(self::OPT_DEBUG); ?>" value="1" <?php checked('1', get_option(self::OPT_DEBUG, '0')); ?>>
+                                    Show the debug panel to Clients on every admin page
+                                </label>
+                                <p class="description">Log in as a Client to see what they're allowed, what was removed, and which page sent them back to the Dashboard. Every Client sees this panel while it's on, so turn it off when you're done.</p>
+                                <?php if ('1' === get_option(self::OPT_DEBUG, '0')) : ?>
+                                    <p class="description" style="color:#b32d2e"><strong>Debug panel is on.</strong> Clients currently see it.</p>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <tr>
                             <th scope="row">Extra capabilities</th>
                             <td>
                                 <textarea name="<?php echo esc_attr(self::OPT_CAPS); ?>" rows="4" class="large-text code"><?php echo esc_textarea(get_option(self::OPT_CAPS, '')); ?></textarea>
@@ -752,7 +836,7 @@ class CHU_Client_Menu {
                 <?php submit_button('Save Client Access'); ?>
             </form>
 
-            <p>To check what a Client sees, log in as one and add <code>?chcm_debug=1</code> to any admin URL.</p>
+            <p>To check what a Client sees, turn on the debug panel above and log in as one.</p>
         </div>
         <script>
         (function () {
