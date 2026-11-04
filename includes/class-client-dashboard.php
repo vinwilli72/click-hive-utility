@@ -36,6 +36,8 @@ class CHU_Client_Dashboard {
 
         if ($this->is_enabled()) {
             add_action('wp_dashboard_setup', array($this, 'widgets'));
+            add_action('wp_dashboard_setup', array($this, 'pin_widget'), PHP_INT_MAX);
+            add_filter('get_user_option_meta-box-order_dashboard', array($this, 'pin_saved_order'));
             add_action('admin_enqueue_scripts', array($this, 'assets'));
         } else {
             add_action('admin_enqueue_scripts', array($this, 'editor_assets'));
@@ -203,6 +205,51 @@ class CHU_Client_Dashboard {
         if (current_user_can('read')) {
             wp_add_dashboard_widget('chm_client_dashboard_widget', 'Client Dashboard', array($this, 'render'), null, null, 'normal', 'high');
         }
+    }
+
+    /**
+     * Put the widget first in the first column, after every other plugin (Rank Math, etc.) has added its own.
+     */
+    public function pin_widget() {
+        global $wp_meta_boxes;
+        $id = 'chm_client_dashboard_widget';
+        if (empty($wp_meta_boxes['dashboard'])) {
+            return;
+        }
+
+        $box = null;
+        foreach ($wp_meta_boxes['dashboard'] as $context => $priorities) {
+            foreach ((array) $priorities as $priority => $boxes) {
+                if (isset($boxes[$id])) {
+                    $box = $boxes[$id];
+                    unset($wp_meta_boxes['dashboard'][$context][$priority][$id]);
+                }
+            }
+        }
+        if (!$box) {
+            return;
+        }
+
+        $high = isset($wp_meta_boxes['dashboard']['normal']['high']) ? (array) $wp_meta_boxes['dashboard']['normal']['high'] : array();
+        $wp_meta_boxes['dashboard']['normal']['high'] = array($id => $box) + $high;
+    }
+
+    /**
+     * A user who has ever dragged dashboard widgets has a saved order that WordPress applies first.
+     * Move this widget to the front of the first column in that saved order.
+     */
+    public function pin_saved_order($order) {
+        if (!is_array($order) || empty($order)) {
+            return $order;
+        }
+        $id = 'chm_client_dashboard_widget';
+        foreach ($order as $column => $list) {
+            $ids            = array_filter(explode(',', (string) $list), 'strlen');
+            $order[$column] = implode(',', array_diff($ids, array($id)));
+        }
+        $first = isset($order['normal']) ? 'normal' : key($order);
+        $order[$first] = ltrim($id . ',' . $order[$first], ',');
+        return $order;
     }
 
     public function page() {
