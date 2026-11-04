@@ -29,6 +29,7 @@ require_once CHU_PLUGIN_DIR . 'includes/class-admin-styling.php';
 require_once CHU_PLUGIN_DIR . 'includes/class-updater.php';
 require_once CHU_PLUGIN_DIR . 'includes/class-settings.php';
 require_once CHU_PLUGIN_DIR . 'includes/class-client-menu.php';
+require_once CHU_PLUGIN_DIR . 'includes/class-client-dashboard.php';
 
 // Initialize the plugin features
 function chu_init() {
@@ -36,6 +37,7 @@ function chu_init() {
     $settings = new CHU_Settings();
     $admin_styling = new CHU_Admin_Styling();
     $client_menu = new CHU_Client_Menu();
+    $client_dashboard = new CHU_Client_Dashboard();
     
     // Initialize updater
     $updater = new CHU_Updater(CHU_PLUGIN_FILE);
