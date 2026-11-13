@@ -206,7 +206,9 @@
                 "parseResponse": true,
                 "stopOnHttpError": false,
                 "allowRedirects": false,
-                "timeout": 30
+                "timeout": 30,
+                "shareCookies": false,
+                "requestCompressedContent": true
               },
               "metadata": {
                 "designer": {
@@ -242,7 +244,9 @@
                 "parseResponse": true,
                 "stopOnHttpError": false,
                 "allowRedirects": false,
-                "timeout": 30
+                "timeout": 30,
+                "shareCookies": false,
+                "requestCompressedContent": true
               },
               "metadata": {
                 "designer": {
