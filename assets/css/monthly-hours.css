@@ -1,0 +1,13 @@
+.chu-hours h3{margin:4px 0 10px}
+.chu-hours h3+.chu-hours-month,.chu-hours-updated+h3{margin-top:18px}
+.chu-hours-table{width:100%;border-collapse:collapse;margin-bottom:8px}
+.chu-hours-table th,.chu-hours-table td{padding:8px 10px;border-bottom:1px solid #dcdcde;text-align:left}
+.chu-hours-table thead th{font-weight:600;color:#50575e;font-size:12px;text-transform:uppercase;letter-spacing:.02em}
+.chu-hours-table tbody th{font-weight:600}
+.chu-hours-table td{font-variant-numeric:tabular-nums}
+.chu-hours-table tr:last-child th,.chu-hours-table tr:last-child td{border-bottom:0}
+.chu-hours-updated{color:#646970;font-size:12px;margin:6px 0 0}
+.chu-hours-month{border:1px solid #dcdcde;border-radius:6px;margin:8px 0;padding:0 10px}
+.chu-hours-month summary{cursor:pointer;padding:8px 0;font-weight:600}
+.chu-hours-month[open] summary{border-bottom:1px solid #dcdcde}
+.chu-hours-admin .chu-hours{max-width:640px;background:#fff;border:1px solid #c3c4c7;border-radius:6px;padding:16px}
