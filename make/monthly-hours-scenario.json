@@ -1,0 +1,290 @@
+{
+  "name": "Monthly Hours to Client Dashboards",
+  "flow": [
+    {
+      "id": 1,
+      "module": "clickup:makeApiCall",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 6651620
+      },
+      "mapper": {
+        "url": "/v2/list/1700370000000554/task",
+        "method": "GET",
+        "qs": [
+          {
+            "key": "statuses[]",
+            "value": "active"
+          },
+          {
+            "key": "subtasks",
+            "value": "false"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0,
+          "name": "Get Active contracts"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:BasicFeeder",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "array": "{{add(emptyarray; formatDate(addMonths(now; -1); \"YYYY-MM\"); formatDate(now; \"YYYY-MM\"))}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0,
+          "name": "Last month and this month"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "module": "builtin:BasicFeeder",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "array": "{{1.body.tasks}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0,
+          "name": "Each client"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "module": "clickup:makeApiCall",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 6651620
+      },
+      "filter": {
+        "name": "Has a site URL, key and ClickUp ID",
+        "conditions": [
+          [
+            {
+              "a": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Site URL\"))}}",
+              "o": "text:notempty"
+            },
+            {
+              "a": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Dashboard Key\"))}}",
+              "o": "text:notempty"
+            },
+            {
+              "a": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\"))}}",
+              "o": "text:notempty"
+            }
+          ]
+        ]
+      },
+      "mapper": {
+        "url": "/v2/team/9011842964/time_entries",
+        "method": "GET",
+        "qs": [
+          {
+            "key": "start_date",
+            "value": "{{formatDate(parseDate(2.value; \"YYYY-MM\"); \"x\")}}"
+          },
+          {
+            "key": "end_date",
+            "value": "{{formatDate(addMonths(parseDate(2.value; \"YYYY-MM\"); 1); \"x\")}}"
+          },
+          {
+            "key": "assignee",
+            "value": "3761106,81425266,48215183"
+          },
+          {
+            "key": "include_task_tags",
+            "value": "true"
+          },
+          {
+            "key": "{{if(startsWith(first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\")); \"list:\"); \"list_id\"; if(startsWith(first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\")); \"space:\"); \"space_id\"; \"folder_id\"))}}",
+            "value": "{{replace(replace(first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\")); \"list:\"; emptystring); \"space:\"; emptystring)}}"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": {
+          "x": 900,
+          "y": 0,
+          "name": "Time entries for the month"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "mapper": null,
+      "metadata": {
+        "designer": {
+          "x": 1200,
+          "y": 0
+        }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 6,
+              "module": "builtin:BasicFeeder",
+              "version": 1,
+              "parameters": {},
+              "filter": {
+                "name": "Has time entries",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{length(4.body.data)}}",
+                      "b": "0",
+                      "o": "number:greater"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "array": "{{4.body.data}}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": -150,
+                  "name": "Each time entry"
+                }
+              }
+            },
+            {
+              "id": 7,
+              "module": "util:TextAggregator",
+              "version": 1,
+              "parameters": {
+                "feeder": 6,
+                "rowSeparator": "other",
+                "otherRowSeparator": ","
+              },
+              "mapper": {
+                "value": "{\"d\":\"{{ifempty(6.duration; 0)}}\",\"t\":\"{{join(map(6.task_tags; \"name\"); \"|\")}}\"}"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": -150,
+                  "name": "Shrink to hours and tags"
+                }
+              }
+            },
+            {
+              "id": 8,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "noAuth"
+              },
+              "mapper": {
+                "url": "{{replace(first(map(3.custom_fields; \"value\"; \"name\"; \"Site URL\")); /\\/+$/; emptystring)}}/wp-json/click-hive/v1/hours",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "X-Click-Hive-Key",
+                    "value": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Dashboard Key\"))}}"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"month\":\"{{2.value}}\",\"budgets\":{\"Hosting\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"Hosting\")); \"null\")}},\"SEO\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"SEO\")); \"null\")}},\"Ads Management\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"Ads Management\")); \"null\")}},\"Consulting\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"Consulting\")); \"null\")}},\"Available\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"Available\")); \"null\")}}},\"entries\":[{{7.text}}]}",
+                "parseResponse": true,
+                "stopOnHttpError": false,
+                "allowRedirects": false,
+                "timeout": 30
+              },
+              "metadata": {
+                "designer": {
+                  "x": 2100,
+                  "y": -150,
+                  "name": "Send to client site"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 9,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "noAuth"
+              },
+              "mapper": {
+                "url": "{{replace(first(map(3.custom_fields; \"value\"; \"name\"; \"Site URL\")); /\\/+$/; emptystring)}}/wp-json/click-hive/v1/hours",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "X-Click-Hive-Key",
+                    "value": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Dashboard Key\"))}}"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"month\":\"{{2.value}}\",\"budgets\":{\"Hosting\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"Hosting\")); \"null\")}},\"SEO\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"SEO\")); \"null\")}},\"Ads Management\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"Ads Management\")); \"null\")}},\"Consulting\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"Consulting\")); \"null\")}},\"Available\":{{ifempty(first(map(3.custom_fields; \"value\"; \"name\"; \"Available\")); \"null\")}}},\"entries\":[]}",
+                "parseResponse": true,
+                "stopOnHttpError": false,
+                "allowRedirects": false,
+                "timeout": 30
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 150,
+                  "name": "Send to client site"
+                }
+              },
+              "filter": {
+                "name": "No time entries",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{length(4.body.data)}}",
+                      "b": "0",
+                      "o": "number:equal"
+                    }
+                  ]
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "us2.make.com"
+  }
+}
