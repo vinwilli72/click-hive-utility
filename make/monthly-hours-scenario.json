@@ -75,15 +75,15 @@
           [
             {
               "a": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Site URL\"))}}",
-              "o": "text:notempty"
+              "o": "exist"
             },
             {
               "a": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Dashboard Key\"))}}",
-              "o": "text:notempty"
+              "o": "exist"
             },
             {
               "a": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\"))}}",
-              "o": "text:notempty"
+              "o": "exist"
             }
           ]
         ]
