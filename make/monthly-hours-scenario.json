@@ -109,7 +109,7 @@
             "value": "true"
           },
           {
-            "key": "{{if(startsWith(first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\")); \"list:\"); \"list_id\"; if(startsWith(first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\")); \"space:\"); \"space_id\"; \"folder_id\"))}}",
+            "key": "{{if(contains(first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\")); \"list:\"); \"list_id\"; if(contains(first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\")); \"space:\"); \"space_id\"; \"folder_id\"))}}",
             "value": "{{replace(replace(first(map(3.custom_fields; \"value\"; \"name\"; \"Folder ID\")); \"list:\"; emptystring); \"space:\"; emptystring)}}"
           }
         ]
@@ -192,7 +192,7 @@
                 "authenticationType": "noAuth"
               },
               "mapper": {
-                "url": "{{replace(first(map(3.custom_fields; \"value\"; \"name\"; \"Site URL\")); /\\/+$/; emptystring)}}/wp-json/click-hive/v1/hours",
+                "url": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Site URL\"))}}/wp-json/click-hive/v1/hours",
                 "method": "post",
                 "headers": [
                   {
@@ -228,7 +228,7 @@
                 "authenticationType": "noAuth"
               },
               "mapper": {
-                "url": "{{replace(first(map(3.custom_fields; \"value\"; \"name\"; \"Site URL\")); /\\/+$/; emptystring)}}/wp-json/click-hive/v1/hours",
+                "url": "{{first(map(3.custom_fields; \"value\"; \"name\"; \"Site URL\"))}}/wp-json/click-hive/v1/hours",
                 "method": "post",
                 "headers": [
                   {
