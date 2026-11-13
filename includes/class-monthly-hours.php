@@ -12,6 +12,8 @@
  * Keeping that rule here keeps the Make scenario simple.
  *
  * Make authenticates with a per-site key generated on Click Hive > Monthly Hours.
+ *
+ * Off by default. While off, the widget is hidden and the endpoint refuses every update.
  */
 
 if (!defined('ABSPATH')) {
@@ -22,6 +24,8 @@ class CHU_Monthly_Hours {
 
     const OPT_DATA   = 'chu_monthly_hours';
     const OPT_KEY    = 'chu_monthly_hours_key';
+    const OPT_ON     = 'chu_monthly_hours_enabled';
+    const GROUP      = 'chu_monthly_hours';
     const SLUG       = 'chu-monthly-hours';
     const WIDGET_ID  = 'chu_monthly_hours_widget';
     const NS         = 'click-hive/v1';
@@ -32,11 +36,29 @@ class CHU_Monthly_Hours {
     private $page_hook = '';
 
     public function __construct() {
-        add_action('rest_api_init', array($this, 'routes'));
         add_action('admin_menu', array($this, 'menu'), 20);
+        add_action('admin_init', array($this, 'register'));
         add_action('admin_post_chu_monthly_hours_key', array($this, 'regenerate_key'));
-        add_action('wp_dashboard_setup', array($this, 'widget'));
         add_action('admin_enqueue_scripts', array($this, 'assets'));
+
+        if (self::is_enabled()) {
+            add_action('rest_api_init', array($this, 'routes'));
+            add_action('wp_dashboard_setup', array($this, 'widget'));
+        }
+    }
+
+    public static function is_enabled() {
+        return '1' === get_option(self::OPT_ON, '0');
+    }
+
+    public function register() {
+        register_setting(self::GROUP, self::OPT_ON, array(
+            'type'              => 'string',
+            'sanitize_callback' => function ($value) {
+                return '1' === $value ? '1' : '0';
+            },
+            'default'           => '0',
+        ));
     }
 
     /**
@@ -255,14 +277,28 @@ class CHU_Monthly_Hours {
         if (!current_user_can('manage_options')) {
             return;
         }
-        $key    = self::key();
-        $months = self::months();
+        $enabled = self::is_enabled();
+        $months  = self::months();
 
         echo '<div class="wrap chu-hours-admin"><h1>Monthly Hours</h1>';
         if (isset($_GET['key-updated'])) {
             echo '<div class="notice notice-success"><p>New key created. Paste it into this client\'s Dashboard Key field in ClickUp, or the nightly sync will stop updating this site.</p></div>';
         }
+        settings_errors();
         echo '<p>Click Hive\'s nightly Make scenario sends this site its hours from ClickUp. Clients see them in the Monthly Hours widget on Dashboard &gt; Home once the first update arrives.</p>';
+
+        echo '<form method="post" action="options.php">';
+        settings_fields(self::GROUP);
+        echo '<input type="hidden" name="' . esc_attr(self::OPT_ON) . '" value="0">';
+        echo '<p><label><input type="checkbox" name="' . esc_attr(self::OPT_ON) . '" value="1"' . checked($enabled, true, false) . '> <strong>Enable Monthly Hours</strong> (the widget on Dashboard &gt; Home and the connection Make uses to send hours)</label></p>';
+        submit_button('Save', 'primary', 'submit', false);
+        echo '</form>';
+
+        if (!$enabled) {
+            echo '<p class="description">Off on this site. Nothing is shown to clients and updates from Make are refused. Turn it on and save to get this site\'s Dashboard Key.</p></div>';
+            return;
+        }
+        $key = self::key();
 
         echo '<h2>Connection</h2><table class="form-table" role="presentation">';
         echo '<tr><th scope="row">Endpoint</th><td><code>' . esc_html(rest_url(self::NS . self::ROUTE)) . '</code></td></tr>';

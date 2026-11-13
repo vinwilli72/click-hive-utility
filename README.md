@@ -22,6 +22,7 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 - Added Monthly Hours (Click Hive > Monthly Hours): a Dashboard > Home widget showing each contract item's monthly budget and the hours used against it, with previous months below
 - Click Hive's nightly Make scenario posts the month's ClickUp hours (by task tag) and contract budgets to `/wp-json/click-hive/v1/hours`, authenticated with the site's Dashboard Key
 - Hours on a tag that matches a contract item count toward that item; all other hours count toward Available. Hosting shows its budget with no hours
+- Off by default on every site: check Enable Monthly Hours on Click Hive > Monthly Hours to turn it on. While off, no widget shows and updates from Make are refused
 - The widget stays hidden until the first update arrives
 
 ### 1.1.0
