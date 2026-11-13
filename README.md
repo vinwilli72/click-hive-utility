@@ -18,6 +18,9 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
+### 1.2.1
+- Monthly Hours accepts raw ClickUp time entries from Make and adds them up by task tag on the site. An entry counts only when its task has exactly one billing tag (seo, ads management, consulting, web development, website changes); "internal" time is never shown, and entries with no billing tag or more than one are reported back to Make as unsorted
+
 ### 1.2.0
 - Added Monthly Hours (Click Hive > Monthly Hours): a Dashboard > Home widget showing each contract item's monthly budget and the hours used against it, with previous months below
 - Click Hive's nightly Make scenario posts the month's ClickUp hours (by task tag) and contract budgets to `/wp-json/click-hive/v1/hours`, authenticated with the site's Dashboard Key

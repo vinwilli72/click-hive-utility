@@ -62,6 +62,48 @@ class CHU_Monthly_Hours {
     }
 
     /**
+     * ClickUp task tags that count as billable activities. A time entry counts only when its task
+     * carries exactly one of these (or "internal", which is never shown). Anything else, like
+     * seo-plan-2026-11, is ignored when deciding.
+     */
+    public static function billing_tags() {
+        return apply_filters('chu_monthly_hours_billing_tags', array('seo', 'ads management', 'consulting', 'web development', 'website changes'));
+    }
+
+    /**
+     * Sum raw ClickUp time entries into hours per billing tag.
+     *
+     * @param array $entries List of array('d' => duration in ms, 't' => 'tag|tag|...').
+     * @return array array('hours' => tag => hours, 'unsorted' => hours with no single billing tag).
+     */
+    public static function sum_entries($entries) {
+        $billing  = array_map('strtolower', self::billing_tags());
+        $known    = array_merge($billing, array('internal'));
+        $hours    = array();
+        $unsorted = 0.0;
+
+        foreach (array_slice((array) $entries, 0, 5000) as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $ms = isset($entry['d']) && is_numeric($entry['d']) ? (float) $entry['d'] : 0;
+            if ($ms <= 0) {
+                continue; // Empty rows and timers still running.
+            }
+            $tags    = array_filter(array_map('trim', explode('|', strtolower(isset($entry['t']) ? (string) $entry['t'] : ''))), 'strlen');
+            $matched = array_values(array_unique(array_intersect($tags, $known)));
+            $h       = $ms / 3600000;
+
+            if (1 !== count($matched)) {
+                $unsorted += $h;
+            } elseif ('internal' !== $matched[0]) {
+                $hours[$matched[0]] = (isset($hours[$matched[0]]) ? $hours[$matched[0]] : 0) + $h;
+            }
+        }
+        return array('hours' => $hours, 'unsorted' => round($unsorted, 2));
+    }
+
+    /**
      * Contract line items that never carry hours (shown with the budget only).
      */
     public static function budget_only_lines() {
@@ -190,10 +232,21 @@ class CHU_Monthly_Hours {
             $hours[$tag] = (isset($hours[$tag]) ? $hours[$tag] : 0) + (float) $h;
         }
 
+        // Raw ClickUp time entries from Make, summed here.
+        $unsorted = 0.0;
+        if (isset($p['entries']) && is_array($p['entries'])) {
+            $summed   = self::sum_entries($p['entries']);
+            $unsorted = $summed['unsorted'];
+            foreach ($summed['hours'] as $tag => $h) {
+                $hours[$tag] = (isset($hours[$tag]) ? $hours[$tag] : 0) + $h;
+            }
+        }
+
         return array(
             'month'        => $month,
             'budgets'      => $budgets,
             'hours_by_tag' => $hours,
+            'unsorted'     => $unsorted,
             'received'     => time(),
         );
     }
@@ -234,7 +287,8 @@ class CHU_Monthly_Hours {
         return rest_ensure_response(array(
             'ok'    => true,
             'month' => $clean['month'],
-            'rows'  => self::allocate($clean['budgets'], $clean['hours_by_tag']),
+            'rows'     => self::allocate($clean['budgets'], $clean['hours_by_tag']),
+            'unsorted' => $clean['unsorted'],
         ));
     }
 
