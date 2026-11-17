@@ -24,6 +24,7 @@ class CHU_Client_Menu {
     const OPT_ITEMS        = 'chu_client_access_items';  // 1.1.0+ checklist
     const OPT_CAPS         = 'ch_client_menu_caps';
     const OPT_DEBUG        = 'chu_client_access_debug';
+    const OPT_ORDER        = 'chu_client_access_order';  // top-level slugs in the Client's sidebar order
     const OPT_ROLE_VERSION = 'ch_cm_role_version';
     const ROLE_VERSION     = '1.1';
     const ROLE             = 'client';
@@ -58,6 +59,8 @@ class CHU_Client_Menu {
         add_filter('user_has_cap', array($this, 'grant_caps'), 10, 4);
         add_action('admin_menu', array($this, 'start_menu_build'), PHP_INT_MIN);
         add_action('admin_menu', array($this, 'filter_menu'), PHP_INT_MAX);
+        add_filter('custom_menu_order', array($this, 'use_custom_order'), PHP_INT_MAX);
+        add_filter('menu_order', array($this, 'apply_order'), PHP_INT_MAX);
         add_action('admin_notices', array($this, 'render_debug'), 1);
         add_action('admin_footer', array($this, 'render_debug_fallback'));
 
@@ -517,6 +520,74 @@ class CHU_Client_Menu {
         }
     }
 
+    /* ---------------------------------------------------------------
+     * Sidebar order
+     * ------------------------------------------------------------- */
+
+    /**
+     * Saved section order, keeping only sections that are still checked.
+     */
+    private function get_order() {
+        $saved = get_option(self::OPT_ORDER, array());
+        if (!is_array($saved)) {
+            return array();
+        }
+        $plan = $this->get_plan();
+        return array_values(array_filter($saved, function ($slug) use ($plan) {
+            return is_string($slug) && isset($plan[$slug]);
+        }));
+    }
+
+    public function use_custom_order($custom) {
+        return ($this->is_client() && $this->get_order()) ? true : $custom;
+    }
+
+    /**
+     * Reorder the Client's sidebar. Sections in the saved order take the slots that sections held
+     * before, in saved order; separators and anything not in the order stay where they were.
+     * A checked page that shows up as its own top-level item for the Client (see filter_menu)
+     * takes the position of the section it was checked under.
+     */
+    public function apply_order($menu_order) {
+        if (!$this->is_client() || !is_array($menu_order)) {
+            return $menu_order;
+        }
+        $order = $this->get_order();
+        if (empty($order)) {
+            return $menu_order;
+        }
+
+        $plan = $this->get_plan();
+        $pos  = array();
+        foreach ($order as $i => $top) {
+            $pos[$top] = $i;
+        }
+        foreach ($order as $i => $top) {
+            foreach (array_keys($plan[$top]['subs']) as $sub) {
+                if (!isset($pos[$sub])) {
+                    $pos[$sub] = $i;
+                }
+            }
+        }
+
+        $slots  = array();
+        $placed = array();
+        foreach ($menu_order as $idx => $raw) {
+            $slug = html_entity_decode((string) $raw);
+            if (isset($pos[$slug])) {
+                $slots[]  = $idx;
+                $placed[] = array('raw' => $raw, 'pos' => $pos[$slug], 'was' => $idx);
+            }
+        }
+        usort($placed, function ($a, $b) {
+            return $a['pos'] === $b['pos'] ? $a['was'] - $b['was'] : $a['pos'] - $b['pos'];
+        });
+        foreach ($slots as $n => $idx) {
+            $menu_order[$idx] = $placed[$n]['raw'];
+        }
+        return $menu_order;
+    }
+
     private function page_url($slug, $parent) {
         if (false !== strpos($slug, '.php')) {
             return admin_url($slug);
@@ -730,6 +801,11 @@ class CHU_Client_Menu {
             },
             'default'           => '0',
         ));
+        register_setting('chu_client_menu', self::OPT_ORDER, array(
+            'type'              => 'array',
+            'sanitize_callback' => array($this, 'sanitize_order'),
+            'default'           => array(),
+        ));
         register_setting('chu_client_menu', self::OPT_CAPS, array(
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_textarea_field',
@@ -768,6 +844,17 @@ class CHU_Client_Menu {
         }
 
         return array('v' => 2, 'items' => $items);
+    }
+
+    public function sanitize_order($value) {
+        $clean = array();
+        foreach ((array) $value as $slug) {
+            $slug = trim(wp_strip_all_tags(html_entity_decode((string) $slug)));
+            if ('' !== $slug && !in_array($slug, $clean, true)) {
+                $clean[] = $slug;
+            }
+        }
+        return $clean;
     }
 
     private function menu_title($raw) {
@@ -852,11 +939,13 @@ class CHU_Client_Menu {
                     </thead>
                     <tbody>
                     <?php
+                    $titles = array();
                     foreach ((array) $menu as $item) {
                         if (empty($item[0]) || empty($item[2])) {
                             continue;
                         }
                         $top     = html_entity_decode($item[2]);
+                        $titles[$top] = $this->menu_title($item[0]);
                         $top_cap = isset($item[1]) ? $item[1] : '';
                         $checked = isset($plan[$top]) && $plan[$top]['checked'];
                         $this->render_row($this->menu_title($item[0]), '', $top, $top_cap, $checked, $role);
@@ -866,6 +955,7 @@ class CHU_Client_Menu {
                                 $slug    = html_entity_decode($sub[2]);
                                 $sub_cap = isset($sub[1]) ? $sub[1] : '';
                                 $checked = isset($plan[$top]) && array_key_exists($slug, $plan[$top]['subs']);
+                                $titles[$top . '|' . $slug] = $this->menu_title($sub[0]);
                                 $this->render_row($this->menu_title($sub[0]), $top, $slug, $sub_cap, $checked, $role);
                             }
                         }
@@ -873,6 +963,8 @@ class CHU_Client_Menu {
                     ?>
                     </tbody>
                 </table>
+
+                <?php $this->render_order_list($plan, $titles); ?>
 
                 <?php submit_button('Save Client Access'); ?>
             </form>
@@ -899,6 +991,58 @@ class CHU_Client_Menu {
                 }
             });
         })();
+        </script>
+        <?php
+    }
+
+    /**
+     * Drag-to-sort list of the checked sections, saved with the rest of the form.
+     */
+    private function render_order_list($plan, $titles) {
+        echo '<h2>Sidebar order</h2>';
+
+        if (empty($plan)) {
+            echo '<p>Check pages above and save, then set their order here.</p>';
+            return;
+        }
+
+        $order = $this->get_order();
+        foreach (array_keys($plan) as $top) {
+            if (!in_array($top, $order, true)) {
+                $order[] = $top;
+            }
+        }
+
+        wp_enqueue_script('jquery-ui-sortable');
+
+        echo '<p>Drag sections into the order Clients should see them. Sections you check above show up here after you save.</p>';
+        echo '<ul class="chu-order-list">';
+        foreach ($order as $top) {
+            $label = isset($titles[$top]) && '' !== $titles[$top] ? $titles[$top] : $top;
+            $subs  = array();
+            foreach (array_keys($plan[$top]['subs']) as $sub) {
+                $subs[] = isset($titles[$top . '|' . $sub]) && '' !== $titles[$top . '|' . $sub] ? $titles[$top . '|' . $sub] : $sub;
+            }
+            printf(
+                '<li><span class="dashicons dashicons-menu" aria-hidden="true"></span> <strong>%1$s</strong>%2$s<input type="hidden" name="%3$s[]" value="%4$s"></li>',
+                esc_html($label),
+                $subs ? ' <span class="description">(' . esc_html(implode(', ', $subs)) . ')</span>' : '',
+                esc_attr(self::OPT_ORDER),
+                esc_attr($top)
+            );
+        }
+        echo '</ul>';
+        ?>
+        <style>
+            .chu-order-list { max-width: 600px; margin: 0; }
+            .chu-order-list li { background: #fff; border: 1px solid #c3c4c7; padding: 8px 12px; margin: 0 0 -1px; cursor: move; }
+            .chu-order-list li .dashicons { color: #8c8f94; vertical-align: middle; }
+            .chu-order-list .ui-sortable-placeholder { visibility: visible !important; background: #f0f6fc; border: 1px dashed #2271b1; }
+        </style>
+        <script>
+        jQuery(function ($) {
+            $('.chu-order-list').sortable({ axis: 'y', placeholder: 'ui-sortable-placeholder', forcePlaceholderSize: true });
+        });
         </script>
         <?php
     }
