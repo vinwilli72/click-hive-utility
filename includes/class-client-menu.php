@@ -404,6 +404,17 @@ class CHU_Client_Menu {
         $all  = array();   // every page slug in the menu
         $kept = array();   // slug => URL for pages the Client may open
 
+        // Every checked page by slug, whatever section it was checked under. Some plugins place a page
+        // under a different section depending on the user's capabilities (WooCommerce lists Coupons under
+        // Marketing for admins but as its own top-level item for everyone else), so a checked page is
+        // allowed wherever it shows up in the Client's menu.
+        $checked = array();
+        foreach ($this->checked_pages() as $page) {
+            if (!array_key_exists($page['slug'], $checked)) {
+                $checked[$page['slug']] = $page['cap'];
+            }
+        }
+
         foreach ((array) $menu as $i => $item) {
             if (empty($item[2])) {
                 continue;
@@ -420,22 +431,43 @@ class CHU_Client_Menu {
                 $all[html_entity_decode($sub[2])] = true;
             }
 
-            if (!isset($plan[$top])) {
-                remove_menu_page($raw_top);
-                $this->log_removed($top);
-                continue;
+            if (isset($plan[$top])) {
+                $p = $plan[$top];
+            } elseif (!$is_sep && array_key_exists($top, $checked)) {
+                // A checked page that sits at the top level for this user: treat it as a whole section.
+                $p = array('checked' => true, 'cap' => $checked[$top], 'subs' => array());
+            } else {
+                // A section that wasn't checked but holds a checked page for this user: show only that page.
+                $moved = array();
+                foreach ($subs as $sub) {
+                    $slug = html_entity_decode($sub[2]);
+                    if (array_key_exists($slug, $checked)) {
+                        $moved[$slug] = $checked[$slug];
+                    }
+                }
+                if (empty($moved)) {
+                    remove_menu_page($raw_top);
+                    $this->log_removed($top);
+                    continue;
+                }
+                $p = array('checked' => false, 'cap' => '', 'subs' => $moved);
             }
 
-            $p        = $plan[$top];
-            $explicit = !empty($p['subs']);
+            $explicit   = !empty($p['subs']);
+            $kept_count = 0;
 
             foreach ($subs as $idx => $sub) {
                 $slug = html_entity_decode($sub[2]);
                 $cap  = isset($sub[1]) ? $sub[1] : '';
 
                 if ($explicit) {
-                    $keep   = array_key_exists($slug, $p['subs']);
-                    $stored = $keep ? $p['subs'][$slug] : null;
+                    if (array_key_exists($slug, $p['subs'])) {
+                        $keep   = true;
+                        $stored = $p['subs'][$slug];
+                    } else {
+                        $keep   = array_key_exists($slug, $checked);
+                        $stored = $keep ? $checked[$slug] : null;
+                    }
                 } else {
                     // Whole section: the section's own page plus subpages the role can already open.
                     $keep   = ($slug === $top) || $this->role_has($cap);
@@ -453,6 +485,15 @@ class CHU_Client_Menu {
                     $submenu[$raw_top][$idx][1] = 'read';
                 }
                 $kept[$slug] = $this->page_url($slug, $top);
+                $kept_count++;
+            }
+
+            // A section whose checked subpages all live elsewhere for this user would be an empty
+            // heading with a broken link, so drop it.
+            if ($explicit && 0 === $kept_count) {
+                remove_menu_page($raw_top);
+                $this->log_removed($top);
+                continue;
             }
 
             if (!$explicit) {
