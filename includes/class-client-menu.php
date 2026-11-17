@@ -39,6 +39,7 @@ class CHU_Client_Menu {
     private $request_caps   = null;
     private $items          = null;
     private $plan           = null;
+    private $deferred       = array();   // [parent, index] of subpages hidden only after WordPress's access check
 
     public function __construct() {
         // Settings page and registration run whether or not the feature is on.
@@ -61,6 +62,7 @@ class CHU_Client_Menu {
         add_action('admin_menu', array($this, 'filter_menu'), PHP_INT_MAX);
         add_filter('custom_menu_order', array($this, 'use_custom_order'), PHP_INT_MAX);
         add_filter('menu_order', array($this, 'apply_order'), PHP_INT_MAX);
+        add_action('current_screen', array($this, 'remove_deferred'));
         add_action('admin_notices', array($this, 'render_debug'), 1);
         add_action('admin_footer', array($this, 'render_debug_fallback'));
 
@@ -435,6 +437,21 @@ class CHU_Client_Menu {
             }
         }
 
+        // When the Client opens a checked page whose slug adds arguments to a shared page name
+        // (wc-admin&path=/analytics/overview opens admin.php?page=wc-admin), WordPress finds the page's
+        // parent through the menu entry named exactly "wc-admin" (WooCommerce Home). Removing that entry
+        // makes WordPress refuse the page, so on this request it stays until WordPress has checked
+        // access and is removed before the sidebar is drawn.
+        $shared_page = null;
+        $req_page    = (isset($_GET['page']) && is_string($_GET['page'])) ? wp_unslash($_GET['page']) : null;
+        if (null !== $req_page) {
+            $match = $this->best_match(array_keys($checked));
+            if (null !== $match && 0 === strpos($match, $req_page . '&')) {
+                $shared_page = $req_page;
+            }
+        }
+        $this->deferred = array();
+
         foreach ((array) $menu as $i => $item) {
             if (empty($item[2])) {
                 continue;
@@ -495,7 +512,11 @@ class CHU_Client_Menu {
                 }
 
                 if (!$keep) {
-                    unset($submenu[$raw_top][$idx]);
+                    if (null !== $shared_page && $slug === $shared_page) {
+                        $this->deferred[] = array($raw_top, $idx);
+                    } else {
+                        unset($submenu[$raw_top][$idx]);
+                    }
                     $this->log_removed($top . ' > ' . $slug);
                     continue;
                 }
@@ -535,6 +556,17 @@ class CHU_Client_Menu {
         if (null !== $match && !isset($kept[$match])) {
             $this->deny($kept);
         }
+    }
+
+    /**
+     * Remove the subpages kept for WordPress's access check (see filter_menu), before the sidebar is drawn.
+     */
+    public function remove_deferred() {
+        global $submenu;
+        foreach ($this->deferred as $entry) {
+            unset($submenu[$entry[0]][$entry[1]]);
+        }
+        $this->deferred = array();
     }
 
     /* ---------------------------------------------------------------

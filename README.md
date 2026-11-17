@@ -18,6 +18,9 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
+### 1.3.2
+- Fixed "Sorry, you are not allowed to access this page" on WooCommerce Analytics for Clients. Analytics opens through the same page as WooCommerce Home (wc-admin), and WordPress uses the Home menu entry to check access, so hiding Home made WordPress refuse Analytics. Home now stays in place until WordPress has checked access and is removed before the sidebar is drawn
+
 ### 1.3.1
 - Fixed Clients being sent to the Dashboard from WooCommerce Analytics and other screens whose menu slug carries extra arguments after the page name (wc-admin&path=/analytics/...). These matched WooCommerce Home (wc-admin) instead of the checked page
 
