@@ -18,6 +18,10 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
+### 1.2.2
+- Client Access: a checked page now stays open wherever it appears in the Client's menu. Some plugins place a page in a different section depending on who is logged in (WooCommerce shows Coupons under Marketing for admins and as its own top-level item for everyone else), which sent Clients back to the Dashboard
+- Client Access: a section is hidden when none of its checked subpages appear in it for the Client, so it no longer shows as an empty heading with a broken link (for example Marketing pointing to a 404)
+
 ### 1.2.1
 - Monthly Hours accepts raw ClickUp time entries from Make and adds them up by task tag on the site. An entry counts only when its task has exactly one billing tag (seo, ads management, consulting, web development, website changes); "internal" time is never shown, and entries with no billing tag or more than one are reported back to Make as unsorted
 
