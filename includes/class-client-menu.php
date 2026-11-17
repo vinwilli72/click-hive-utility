@@ -268,7 +268,24 @@ class CHU_Client_Menu {
         $page = (isset($_GET['page']) && is_string($_GET['page'])) ? wp_unslash($_GET['page']) : null;
 
         if (false === strpos($slug, '.php')) {
-            return (null !== $page && $page === $slug) ? 100 : false;
+            // Plugin page slugs can carry extra query arguments after the page name. WooCommerce
+            // Admin uses one page (wc-admin) for every screen and tells them apart by path, as in
+            // "wc-admin&path=/analytics/overview". Match the page name and every extra argument,
+            // so the specific slug outranks the bare "wc-admin" (WooCommerce Home).
+            $parts = explode('&', $slug, 2);
+            if (null === $page || $page !== $parts[0]) {
+                return false;
+            }
+            $extra = array();
+            if (isset($parts[1])) {
+                wp_parse_str($parts[1], $extra);
+            }
+            foreach ($extra as $key => $value) {
+                if (!isset($_GET[$key]) || !is_string($_GET[$key]) || (string) wp_unslash($_GET[$key]) !== (string) $value) {
+                    return false;
+                }
+            }
+            return 100 + count($extra);
         }
 
         $parts = explode('?', $slug, 2);

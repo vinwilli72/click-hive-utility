@@ -21,6 +21,7 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 ### 1.3.0
 - Client Access: new Sidebar order list under the page checklist. Drag the checked sections into the order Clients should see them in and save. Sections checked above appear in the list after saving; separators and unlisted items keep their place
 - A checked page that shows as its own top-level item for Clients (such as WooCommerce Coupons) follows the position of the section it was checked under
+- Fixed Clients being sent to the Dashboard from WooCommerce Analytics and other screens whose menu slug carries extra arguments after the page name (wc-admin&path=/analytics/...). These matched WooCommerce Home (wc-admin) instead of the checked page
 
 ### 1.2.2
 - Client Access: a checked page now stays open wherever it appears in the Client's menu. Some plugins place a page in a different section depending on who is logged in (WooCommerce shows Coupons under Marketing for admins and as its own top-level item for everyone else), which sent Clients back to the Dashboard
