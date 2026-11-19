@@ -18,6 +18,10 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
+### 1.4.0
+- Monthly Hours: Phone System is a contract item that shows its monthly price with no hours, like Hosting. Phone work tagged web development still counts toward Available
+- Monthly Hours: each contract item can carry a short note (for example "Google Business Profile management") shown under the item's name on the dashboard. Make sends notes from the Notes fields on the client's Client Contracts task as a `notes` object (`{"SEO": "..."}`) or a `note` on each budget item. Notes are plain text, one line, up to 300 characters
+
 ### 1.3.2
 - Fixed "Sorry, you are not allowed to access this page" on WooCommerce Analytics for Clients. Analytics opens through the same page as WooCommerce Home (wc-admin), and WordPress uses the Home menu entry to check access, so hiding Home made WordPress refuse Analytics. Home now stays in place until WordPress has checked access and is removed before the sidebar is drawn
 
