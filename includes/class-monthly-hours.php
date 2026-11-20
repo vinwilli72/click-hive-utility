@@ -6,8 +6,8 @@
  * client as a dashboard widget: the contract line items with their monthly budget, and the
  * hours logged against each one.
  *
- * Make sends the contract budgets (from the client's ClickUp folder fields) and the month's
- * hours grouped by ClickUp task tag. This class decides where the hours land: a tag that
+ * Make sends the contract budgets (from the client's ClickUp folder fields), an optional short
+ * note for each contract item, and the month's hours grouped by ClickUp task tag. This class decides where the hours land: a tag that
  * matches a line item on the contract goes to that line, and every other tag goes to Available.
  * Keeping that rule here keeps the Make scenario simple.
  *
@@ -107,7 +107,7 @@ class CHU_Monthly_Hours {
      * Contract line items that never carry hours (shown with the budget only).
      */
     public static function budget_only_lines() {
-        return apply_filters('chu_monthly_hours_budget_only_lines', array('Hosting'));
+        return apply_filters('chu_monthly_hours_budget_only_lines', array('Hosting', 'Phone System'));
     }
 
     /* ---------------------------------------------------------------------------------------
@@ -126,9 +126,9 @@ class CHU_Monthly_Hours {
     /**
      * Assign each tag's hours to a contract line.
      *
-     * @param array $budgets      Ordered list of array('name' => string, 'budget' => float).
+     * @param array $budgets      Ordered list of array('name' => string, 'budget' => float, 'note' => string).
      * @param array $hours_by_tag Map of ClickUp task tag => hours.
-     * @return array Ordered rows of array('name', 'budget' => float|null, 'hours' => float|null).
+     * @return array Ordered rows of array('name', 'budget' => float|null, 'hours' => float|null, 'note' => string).
      */
     public static function allocate($budgets, $hours_by_tag) {
         $budget_only = array_map('strtolower', self::budget_only_lines());
@@ -145,6 +145,7 @@ class CHU_Monthly_Hours {
                 'name'   => $line['name'],
                 'budget' => $line['budget'],
                 'hours'  => in_array($key, $budget_only, true) ? null : 0.0,
+                'note'   => isset($line['note']) ? (string) $line['note'] : '',
             );
         }
 
@@ -161,7 +162,7 @@ class CHU_Monthly_Hours {
             if (!isset($index[$key])) {
                 // Hours fell outside the contract and there is no Available line: show one with no budget.
                 $index[$key] = count($rows);
-                $rows[]      = array('name' => self::AVAILABLE, 'budget' => null, 'hours' => 0.0);
+                $rows[]      = array('name' => self::AVAILABLE, 'budget' => null, 'hours' => 0.0, 'note' => '');
             }
             $rows[$index[$key]]['hours'] += $hours;
         }
@@ -196,13 +197,25 @@ class CHU_Monthly_Hours {
             return new WP_Error('chu_hours_month', 'month must look like 2026-11.', array('status' => 400));
         }
 
+        // Optional notes per contract item: {"SEO": "Google Business Profile management", ...}.
+        $notes = array();
+        if (isset($p['notes']) && is_array($p['notes'])) {
+            foreach (array_slice($p['notes'], 0, 20, true) as $k => $v) {
+                if (is_scalar($v)) {
+                    $notes[strtolower(sanitize_text_field((string) $k))] = self::clean_note($v);
+                }
+            }
+        }
+
         $budgets = array();
         $raw     = (isset($p['budgets']) && is_array($p['budgets'])) ? $p['budgets'] : array();
-        // Accept either [{name, budget}, ...] or {"SEO": 300, ...}.
+        // Accept either [{name, budget, note}, ...] or {"SEO": 300, ...}.
         foreach (array_slice($raw, 0, 20, true) as $k => $v) {
+            $note = '';
             if (is_array($v)) {
                 $name   = isset($v['name']) ? $v['name'] : '';
                 $amount = isset($v['budget']) ? $v['budget'] : null;
+                $note   = isset($v['note']) && is_scalar($v['note']) ? self::clean_note($v['note']) : '';
             } else {
                 $name   = $k;
                 $amount = $v;
@@ -211,7 +224,10 @@ class CHU_Monthly_Hours {
             if ('' === $name || '' === $amount || null === $amount || !is_numeric($amount) || $amount < 0) {
                 continue;
             }
-            $budgets[] = array('name' => substr($name, 0, 60), 'budget' => round((float) $amount, 2));
+            if ('' === $note && isset($notes[strtolower($name)])) {
+                $note = $notes[strtolower($name)];
+            }
+            $budgets[] = array('name' => substr($name, 0, 60), 'budget' => round((float) $amount, 2), 'note' => $note);
         }
 
         $hours = array();
@@ -249,6 +265,14 @@ class CHU_Monthly_Hours {
             'unsorted'     => $unsorted,
             'received'     => time(),
         );
+    }
+
+    /**
+     * A contract item's note: plain text, one line, at most 300 characters.
+     */
+    private static function clean_note($note) {
+        $note = trim(preg_replace('/\s+/', ' ', sanitize_text_field((string) $note)));
+        return function_exists('mb_substr') ? mb_substr($note, 0, 300) : substr($note, 0, 300);
     }
 
     /* ---------------------------------------------------------------------------------------
@@ -423,7 +447,8 @@ class CHU_Monthly_Hours {
         }
         $html = '<table class="chu-hours-table"><thead><tr><th scope="col">Item</th><th scope="col">Monthly contract</th><th scope="col">Hours used</th></tr></thead><tbody>';
         foreach ($rows as $row) {
-            $html .= '<tr><th scope="row">' . esc_html($row['name']) . '</th><td>' . esc_html(self::money($row['budget'])) . '</td><td>' . esc_html(self::hours($row['hours'])) . '</td></tr>';
+            $note  = isset($row['note']) && '' !== $row['note'] ? '<span class="chu-hours-note">' . esc_html($row['note']) . '</span>' : '';
+            $html .= '<tr><th scope="row">' . esc_html($row['name']) . $note . '</th><td>' . esc_html(self::money($row['budget'])) . '</td><td>' . esc_html(self::hours($row['hours'])) . '</td></tr>';
         }
         return $html . '</tbody></table>';
     }
