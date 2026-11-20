@@ -297,6 +297,13 @@ class CHU_Client_Dashboard {
         }
         echo '</div>';
 
+        /**
+         * Lets other Click Hive modules add a section under the quick links (Monthly Hours uses it).
+         *
+         * @param bool $full_page True on Dashboard > Client Dashboard, false in the Dashboard > Home widget.
+         */
+        do_action('chu_client_dashboard_after_links', !($screen && 'dashboard' === $screen->id));
+
         if ($s['tutorials']) {
             echo '<h2>Tutorials</h2><div class="chm-grid">';
             foreach ($s['tutorials'] as $row) {

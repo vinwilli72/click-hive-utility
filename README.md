@@ -18,6 +18,9 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
+### 1.4.1
+- Monthly Hours now also shows on Dashboard > Client Dashboard, under the quick links, so Clients see their hours on the page they land on after login. Dashboard > Home keeps its own Monthly Hours widget
+
 ### 1.4.0
 - Monthly Hours: Phone System is a contract item that shows its monthly price with no hours, like Hosting. Phone work tagged web development still counts toward Available
 - Monthly Hours: each contract item can carry a short note (for example "Google Business Profile management") shown under the item's name on the dashboard. Make sends notes from the Notes fields on the client's Client Contracts task as a `notes` object (`{"SEO": "..."}`) or a `note` on each budget item. Notes are plain text, one line, up to 300 characters

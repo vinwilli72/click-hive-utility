@@ -12,3 +12,4 @@
 .chu-hours-month summary{cursor:pointer;padding:8px 0;font-weight:600}
 .chu-hours-month[open] summary{border-bottom:1px solid #dcdcde}
 .chu-hours-admin .chu-hours{max-width:640px;background:#fff;border:1px solid #c3c4c7;border-radius:6px;padding:16px}
+.chm-dashboard .chu-hours-card{display:block;max-width:720px;margin-bottom:24px}
