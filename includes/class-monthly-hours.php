@@ -3,13 +3,13 @@
  * Monthly Hours
  *
  * Receives each month's hours from Click Hive's nightly Make scenario and shows them to the
- * client as a dashboard widget: the contract line items with their monthly budget, and the
- * hours logged against each one.
+ * client for the current month only (time doesn't roll over): hourly items as hours included,
+ * used and remaining; fixed items (Hosting, Phone System) as their price; Available as a dollar
+ * budget; and any overage past it.
  *
  * Make sends the contract budgets (from the client's ClickUp folder fields), an optional short
- * note for each contract item, and the month's hours grouped by ClickUp task tag. This class decides where the hours land: a tag that
- * matches a line item on the contract goes to that line, and every other tag goes to Available.
- * Keeping that rule here keeps the Make scenario simple.
+ * note for each contract item, and the month's hours grouped by ClickUp task tag. This class decides where the hours land
+ * (see summarize()) and holds the hourly rates (rates()), which keeps the Make scenario simple.
  *
  * Make authenticates with a per-site key generated on Click Hive > Monthly Hours.
  *
@@ -34,6 +34,9 @@ class CHU_Monthly_Hours {
     const MAX_MONTHS = 12;
 
     private $page_hook = '';
+
+    /** True while drawing the preview on Click Hive > Monthly Hours, which also lists past months. */
+    private $showing_admin_preview = false;
 
     public function __construct() {
         add_action('admin_menu', array($this, 'menu'), 20);
@@ -125,64 +128,101 @@ class CHU_Monthly_Hours {
     }
 
     /**
-     * Assign each tag's hours to a contract line.
+     * Hourly rates by ClickUp billing tag. A contract item whose name matches a tag (SEO, Ads
+     * Management, Consulting) is shown in hours at that rate, and hours that land in Available
+     * are turned into dollars at their tag's rate.
+     */
+    public static function rates() {
+        return apply_filters('chu_monthly_hours_rates', array(
+            'seo'             => 75,
+            'ads management'  => 75,
+            'consulting'      => 150,
+            'web development' => 125,
+            'website changes' => 45,
+        ));
+    }
+
+    /**
+     * Turn a month's budgets and hours into the rows clients see.
+     *
+     * - Fixed items (Hosting, Phone System) show their price only.
+     * - Items with an hourly rate show hours included (price / rate), used and remaining. Hours
+     *   past what's included spill into Available at that item's rate.
+     * - Every other billing tag's hours count toward Available, in dollars at that tag's rate.
+     * - Available shows its dollar budget, used and remaining. Whatever goes past it, or all of
+     *   it when the contract has no Available budget, is the month's overage.
      *
      * @param array $budgets      Ordered list of array('name' => string, 'budget' => float, 'note' => string).
      * @param array $hours_by_tag Map of ClickUp task tag => hours.
-     * @return array Ordered rows of array('name', 'budget' => float|null, 'hours' => float|null, 'note' => string).
+     * @return array array('rows' => list of rows, 'overage' => dollars). Each row has 'name', 'type'
+     *               (fixed|hours|dollars), 'note', 'included', 'used' and 'remaining' (null where it
+     *               doesn't apply). Hours rows count hours; fixed and dollars rows count dollars.
      */
-    public static function allocate($budgets, $hours_by_tag) {
-        $budget_only = array_map('strtolower', self::budget_only_lines());
-        $rows        = array();
-        $index       = array();
-
-        foreach ($budgets as $line) {
-            $key = strtolower($line['name']);
-            if (isset($index[$key])) {
-                continue;
-            }
-            $index[$key] = count($rows);
-            $rows[]      = array(
-                'name'   => $line['name'],
-                'budget' => $line['budget'],
-                'hours'  => in_array($key, $budget_only, true) ? null : 0.0,
-                'note'   => isset($line['note']) ? (string) $line['note'] : '',
-            );
-        }
-
+    public static function summarize($budgets, $hours_by_tag) {
+        $fixed     = array_map('strtolower', self::budget_only_lines());
+        $rates     = array_change_key_case(self::rates(), CASE_LOWER);
         $available = strtolower(self::AVAILABLE);
 
-        foreach ($hours_by_tag as $tag => $hours) {
+        $hours = array();
+        foreach ((array) $hours_by_tag as $tag => $h) {
             $key = strtolower(trim((string) $tag));
-            if ('' === $key || $hours <= 0) {
+            if ('' !== $key && $h > 0) {
+                $hours[$key] = (isset($hours[$key]) ? $hours[$key] : 0) + (float) $h;
+            }
+        }
+
+        $rows       = array();
+        $seen       = array();
+        $avail_line = null;
+        $spill      = 0.0; // Dollars that go to Available.
+
+        foreach ((array) $budgets as $line) {
+            $key = strtolower($line['name']);
+            if (isset($seen[$key])) {
                 continue;
             }
-            if ($key === $available || !isset($index[$key]) || in_array($key, $budget_only, true)) {
-                $key = $available;
+            $seen[$key] = true;
+            $note       = isset($line['note']) ? (string) $line['note'] : '';
+
+            if ($key === $available) {
+                $avail_line = array('budget' => $line['budget'], 'note' => $note);
+                continue;
             }
-            if (!isset($index[$key])) {
-                // Hours fell outside the contract and there is no Available line: show one with no budget.
-                $index[$key] = count($rows);
-                $rows[]      = array('name' => self::AVAILABLE, 'budget' => null, 'hours' => 0.0, 'note' => '');
+            if (in_array($key, $fixed, true)) {
+                $rows[] = array('name' => $line['name'], 'type' => 'fixed', 'note' => $note, 'included' => $line['budget'], 'used' => null, 'remaining' => null);
+                continue;
             }
-            $rows[$index[$key]]['hours'] += $hours;
+            if (isset($rates[$key]) && $rates[$key] > 0) {
+                $rate     = (float) $rates[$key];
+                $included = round($line['budget'] / $rate, 2);
+                $used     = isset($hours[$key]) ? $hours[$key] : 0.0;
+                unset($hours[$key]);
+                $spill   += max(0, $used - $included) * $rate;
+                $rows[]   = array('name' => $line['name'], 'type' => 'hours', 'note' => $note, 'included' => $included, 'used' => round($used, 2), 'remaining' => round(max(0, $included - $used), 2));
+                continue;
+            }
+            // A contract item with no rate and no fixed price: show the price and any hours on its tag.
+            $used = isset($hours[$key]) ? round($hours[$key], 2) : null;
+            unset($hours[$key]);
+            $rows[] = array('name' => $line['name'], 'type' => 'fixed', 'note' => $note, 'included' => $line['budget'], 'used' => $used, 'remaining' => null);
         }
 
-        // Available always reads last.
-        if (isset($index[$available])) {
-            $row = $rows[$index[$available]];
-            unset($rows[$index[$available]]);
-            $rows[] = $row;
-        }
-
-        foreach ($rows as &$row) {
-            if (null !== $row['hours']) {
-                $row['hours'] = round($row['hours'], 2);
+        // Everything left (development, website changes, tags with no contract item) is Available work.
+        foreach ($hours as $key => $h) {
+            if (isset($rates[$key])) {
+                $spill += $h * (float) $rates[$key];
             }
         }
-        unset($row);
+        $spill = round($spill, 2);
 
-        return array_values($rows);
+        $overage = $spill;
+        if (null !== $avail_line) {
+            $budget  = (float) $avail_line['budget'];
+            $overage = round(max(0, $spill - $budget), 2);
+            $rows[]  = array('name' => self::AVAILABLE, 'type' => 'dollars', 'note' => $avail_line['note'], 'included' => $budget, 'used' => $spill, 'remaining' => round(max(0, $budget - $spill), 2));
+        }
+
+        return array('rows' => $rows, 'overage' => $overage);
     }
 
     /**
@@ -312,7 +352,7 @@ class CHU_Monthly_Hours {
         return rest_ensure_response(array(
             'ok'    => true,
             'month' => $clean['month'],
-            'rows'     => self::allocate($clean['budgets'], $clean['hours_by_tag']),
+            'summary'  => self::summarize($clean['budgets'], $clean['hours_by_tag']),
             'unsorted' => $clean['unsorted'],
         ));
     }
@@ -400,7 +440,9 @@ class CHU_Monthly_Hours {
 
         if ($months) {
             echo '<h2>Preview</h2>';
+            $this->showing_admin_preview = true;
             $this->render();
+            $this->showing_admin_preview = false;
         }
         echo '</div>';
     }
@@ -441,29 +483,36 @@ class CHU_Monthly_Hours {
     }
 
     private static function money($amount) {
-        if (null === $amount) {
-            return 'Not included';
-        }
         $decimals = (floor($amount) == $amount) ? 0 : 2;
         return '$' . number_format_i18n($amount, $decimals);
     }
 
     private static function hours($hours) {
-        if (null === $hours) {
-            return 'n/a';
-        }
-        return rtrim(rtrim(number_format_i18n($hours, 2), '0'), '.,') ?: '0';
+        $n = rtrim(rtrim(number_format_i18n($hours, 2), '0'), '.,') ?: '0';
+        return $n . ' ' . (1.0 === (float) $hours ? 'hr' : 'hrs');
     }
 
     private static function table($month) {
-        $rows = self::allocate($month['budgets'], $month['hours_by_tag']);
-        if (!$rows) {
+        $summary = self::summarize($month['budgets'], $month['hours_by_tag']);
+        if (!$summary['rows'] && $summary['overage'] <= 0) {
             return '<p>No contract items or hours for this month.</p>';
         }
-        $html = '<table class="chu-hours-table"><thead><tr><th scope="col">Item</th><th scope="col">Monthly contract</th><th scope="col">Hours used</th></tr></thead><tbody>';
-        foreach ($rows as $row) {
-            $note  = isset($row['note']) && '' !== $row['note'] ? '<span class="chu-hours-note">' . esc_html($row['note']) . '</span>' : '';
-            $html .= '<tr><th scope="row">' . esc_html($row['name']) . $note . '</th><td>' . esc_html(self::money($row['budget'])) . '</td><td>' . esc_html(self::hours($row['hours'])) . '</td></tr>';
+        $dash = '<span aria-label="Not applicable">&mdash;</span>';
+        $html = '<table class="chu-hours-table"><thead><tr><th scope="col">Item</th><th scope="col">Included</th><th scope="col">Used</th><th scope="col">Remaining</th></tr></thead><tbody>';
+        foreach ($summary['rows'] as $row) {
+            $note = '' !== $row['note'] ? '<span class="chu-hours-note">' . esc_html($row['note']) . '</span>' : '';
+            if ('hours' === $row['type']) {
+                $cells = array(self::hours($row['included']), self::hours($row['used']), self::hours($row['remaining']));
+                $cells = array_map('esc_html', $cells);
+            } elseif ('dollars' === $row['type']) {
+                $cells = array_map('esc_html', array(self::money($row['included']), self::money($row['used']), self::money($row['remaining'])));
+            } else {
+                $cells = array(esc_html(self::money($row['included'])) . ' <span class="chu-hours-fixed">(fixed)</span>', null === $row['used'] ? $dash : esc_html(self::hours($row['used'])), $dash);
+            }
+            $html .= '<tr class="chu-hours-' . esc_attr($row['type']) . '"><th scope="row">' . esc_html($row['name']) . $note . '</th><td>' . implode('</td><td>', $cells) . '</td></tr>';
+        }
+        if ($summary['overage'] > 0) {
+            $html .= '<tr class="chu-hours-overage"><th scope="row">Overage<span class="chu-hours-note">Work beyond this month\'s contract, billed separately.</span></th><td>' . $dash . '</td><td>' . esc_html(self::money($summary['overage'])) . '</td><td>' . $dash . '</td></tr>';
         }
         return $html . '</tbody></table>';
     }
@@ -484,11 +533,12 @@ class CHU_Monthly_Hours {
         echo '<div class="chu-hours">';
         echo '<h3>' . esc_html(self::month_label($key)) . '</h3>';
         echo self::table($current); // Escaped inside table().
-        echo '<p class="chu-hours-updated">Updated ' . esc_html(wp_date(get_option('date_format'), $current['received'])) . '. Hours from Click Hive\'s time tracking, refreshed nightly.</p>';
+        echo '<p class="chu-hours-updated">Hours and budgets reset on the 1st of each month and don\'t roll over. Updated ' . esc_html(wp_date(get_option('date_format'), $current['received'])) . ' from Click Hive\'s time tracking.</p>';
 
-        $previous = array_slice($months, 1, null, true);
+        // Past months are for Click Hive only: clients see the current month, since time doesn't roll over.
+        $previous = $this->showing_admin_preview ? array_slice($months, 1, null, true) : array();
         if ($previous) {
-            echo '<h3>Previous months</h3>';
+            echo '<h3>Previous months (Click Hive only)</h3>';
             foreach ($previous as $m => $month) {
                 echo '<details class="chu-hours-month"><summary>' . esc_html(self::month_label($m)) . '</summary>' . self::table($month) . '</details>';
             }

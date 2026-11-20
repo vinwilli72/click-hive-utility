@@ -18,6 +18,12 @@ WordPress utility plugin that enhances the admin dashboard with improved functio
 
 ## Changelog
 
+### 1.5.0
+- Monthly Hours shows Included, Used and Remaining for each contract item. SEO, Ads Management and Consulting convert their monthly price to hours (SEO and Ads Management at $75/hr, Consulting at $150/hr). Hosting and Phone System show their price marked (fixed). Available stays a dollar budget: development time counts at $125/hr and website changes at $45/hr
+- Hours past an item's included hours spill into Available at that item's rate. Anything past Available, or all Available work when the contract has no Available budget, shows as an Overage row
+- Clients see the current month only, with a note that hours and budgets reset on the 1st and don't roll over. Past months still show in the preview on Click Hive > Monthly Hours
+- Rates can be changed with the `chu_monthly_hours_rates` filter
+
 ### 1.4.1
 - Monthly Hours now also shows on Dashboard > Client Dashboard, under the quick links, so Clients see their hours on the page they land on after login. Dashboard > Home keeps its own Monthly Hours widget
 

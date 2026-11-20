@@ -13,3 +13,7 @@
 .chu-hours-month[open] summary{border-bottom:1px solid #dcdcde}
 .chu-hours-admin .chu-hours{max-width:640px;background:#fff;border:1px solid #c3c4c7;border-radius:6px;padding:16px}
 .chm-dashboard .chu-hours-card{display:block;max-width:720px;margin-bottom:24px}
+.chu-hours-fixed{color:#646970;font-size:12px}
+.chu-hours-table tr.chu-hours-overage th,.chu-hours-table tr.chu-hours-overage td{background:#fef0de;color:#8a4b00}
+.chu-hours-table tr.chu-hours-overage .chu-hours-note{color:#8a4b00}
+@media (max-width:600px){.chu-hours-table th,.chu-hours-table td{padding:6px}}
