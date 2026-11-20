@@ -44,6 +44,7 @@ class CHU_Monthly_Hours {
         if (self::is_enabled()) {
             add_action('rest_api_init', array($this, 'routes'));
             add_action('wp_dashboard_setup', array($this, 'widget'));
+            add_action('chu_client_dashboard_after_links', array($this, 'client_dashboard_section'));
         }
     }
 
@@ -414,8 +415,22 @@ class CHU_Monthly_Hours {
         }
     }
 
+    /**
+     * Show the hours on the full Client Dashboard page, where Clients land after login.
+     * Dashboard > Home already has its own Monthly Hours widget, so the Home version of the
+     * Client Dashboard leaves it out.
+     */
+    public function client_dashboard_section($full_page) {
+        if (!$full_page || !current_user_can('read') || !self::months()) {
+            return;
+        }
+        echo '<h2>Monthly Hours</h2><section class="chm-card chu-hours-card">';
+        $this->render();
+        echo '</section>';
+    }
+
     public function assets($hook) {
-        if ('index.php' === $hook || $hook === $this->page_hook) {
+        if ('index.php' === $hook || 'dashboard_page_chm-client-dashboard' === $hook || $hook === $this->page_hook) {
             wp_enqueue_style('chu-monthly-hours', CHU_PLUGIN_URL . 'assets/css/monthly-hours.css', array(), CHU_VERSION);
         }
     }
